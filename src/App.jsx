@@ -25,14 +25,22 @@ import Register from './pages/Register';
 // INVESTOR TOP NAVIGATION
 // ==========================================
 function InvestorTopNav({ userTier, setUserTier }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <header className="investor-header" style={{ background: '#fff', borderBottom: '1px solid var(--color-border)', position: 'sticky', top: 0, zIndex: 100 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, padding: '0 var(--space-xl)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, background: '#ffffff', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <img src={nemosLogo} alt="NEMOS Logo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />
+          <div
+            onClick={() => navigate('/')}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+          >
+            <div style={{ width: 44, height: 44, background: '#ffffff', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <img src={nemosLogo} alt="NEMOS Logo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />
+            </div>
+            <div className="brand-text" style={{ fontSize: '26px', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #1B7A8B, #00C853)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>NEMOS</div>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #1B7A8B, #00C853)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>NEMOS</div>
         </div>
 
         <nav style={{ display: 'flex', gap: 'var(--space-xl)', height: '100%' }} className="hide-on-mobile">
@@ -53,28 +61,62 @@ function InvestorTopNav({ userTier, setUserTier }) {
                 {userTier === 'premium' && <svg viewBox="0 0 24 24" style={{ width: 9, height: 9, fill: 'currentColor' }}><path d="M2 20 L6 10 L12 14 L18 4 L22 20 Z" /></svg>}
                 {userTier === 'premium' ? 'PREMIUM' : 'REGULAR'}
               </span>
-              <div className="premium-tip">
-                <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.5, marginBottom: 4 }}>
-                  {userTier === 'premium' ? 'Akses semua grade UMKM tanpa batas + analitik portofolio lanjutan' : 'Akses Grade C saja. Upgrade untuk unlock Grade A dan B.'}
-                </div>
-                {userTier === 'premium' && <div style={{ fontSize: 11, color: '#FFD700', fontWeight: 700 }}>Rp 49.000/bulan</div>}
-                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>Klik badge untuk simulasi role ganti tier</div>
-              </div>
             </div>
           </div>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
-          <NavLink to="/login" style={{ color: 'var(--color-text-muted)', marginLeft: 8 }} title="Log Out">
+
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{ display: 'none', background: 'none', border: 'none', padding: 8, color: 'var(--color-text-pri)', cursor: 'pointer' }}
+          >
+            <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }}>
+              {mobileMenuOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : (
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+
+          <div className="hide-on-mobile" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
+
+          <NavLink to="/login" className="hide-on-mobile" style={{ color: 'var(--color-text-muted)', marginLeft: 8 }} title="Log Out">
             <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
           </NavLink>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="mobile-dropdown" style={{ position: 'absolute', top: 72, left: 0, right: 0, background: '#fff', borderBottom: '1px solid var(--color-border)', padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 99 }}>
+            <NavLink to="/" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Beranda</NavLink>
+            <NavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Portofolio</NavLink>
+            <NavLink to="/learn" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">AI Learn Hub</NavLink>
+            <NavLink to="/arena" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">UMKM Arena</NavLink>
+            <NavLink to="/impact" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Laporan Dampak</NavLink>
+            <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
+                <div style={{ fontSize: '14px', fontWeight: 600 }}>Budi Santoso</div>
+              </div>
+              <NavLink to="/login" style={{ color: 'var(--color-danger)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Logout</NavLink>
+            </div>
+          </div>
+        )}
       </div>
       <style>{`
         .nav-link { color: var(--color-text-sec); font-weight: 500; text-decoration: none; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: all 0.2s; height: 100%; }
         .nav-link:hover { color: var(--color-primary); }
         .nav-link.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
-        .premium-tip { position: absolute; top: 100%; right: 0; margin-top: 8px; background: #1E3A5F; color: #fff; padding: 12px 16px; border-radius: 10px; width: 240px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transform: translateY(-4px); transition: all 0.2s ease; z-index: 1000; pointer-events: none; }
-        .premium-tip::before { content: ''; position: absolute; top: -6px; right: 16px; width: 12px; height: 12px; background: #1E3A5F; transform: rotate(45deg); }
-        .premium-badge-wrap:hover .premium-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+        .mobile-nav-link { color: var(--color-text-pri); font-weight: 600; text-decoration: none; padding: 12px; border-radius: 8px; font-size: 15px; }
+        .mobile-nav-link.active { background: var(--color-blue-tint); color: var(--color-primary); }
+        
+        @media (max-width: 768px) {
+          .hide-on-mobile { display: none !important; }
+          .mobile-menu-btn { display: block !important; }
+          .brand-text { font-size: 20px !important; }
+          .investor-header { height: auto !important; }
+        }
       `}</style>
     </header>
   );

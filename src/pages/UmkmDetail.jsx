@@ -154,20 +154,23 @@ export default function UmkmDetail() {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(13,27,42,0.9) 0%, transparent 60%)' }}></div>
 
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'var(--space-2xl) var(--space-xl)' }}>
-                    <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div
+                        className="mobile-stack"
+                        style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-md)' }}
+                    >
                         <div>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 12px 6px 6px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.3)', marginBottom: 'var(--space-md)' }}>
                                 <img src={d.ownerImg} alt={d.owner} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                                 <span style={{ color: '#fff', fontSize: '12px', fontWeight: 500 }}>Pemilik: {d.owner}, {d.ownerYears} tahun</span>
                             </div>
-                            <h1 style={{ color: '#fff', fontSize: '36px', fontWeight: 800, lineHeight: 1.1, marginBottom: 8, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{d.name}</h1>
+                            <h1 className="hero-title-responsive" style={{ color: '#fff', fontSize: '36px', fontWeight: 800, lineHeight: 1.1, marginBottom: 8, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{d.name}</h1>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: 500 }}>
                                 <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                 {d.location}
                             </div>
                         </div>
-                        <div>
-                            <div className={`badge ${GRADE_BADGE[d.grade] || ''}`} style={{ fontSize: '14px', padding: '6px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', background: d.grade === 'A' ? '#1E3A5F' : d.grade === 'B' ? '#6366F1' : '#FF9800', color: '#fff', borderRadius: 999 }}>
+                        <div className="mobile-full-width" style={{ textAlign: 'right' }}>
+                            <div className={`badge ${GRADE_BADGE[d.grade] || ''}`} style={{ display: 'inline-block', fontSize: '14px', padding: '6px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', background: d.grade === 'A' ? '#1E3A5F' : d.grade === 'B' ? '#6366F1' : '#FF9800', color: '#fff', borderRadius: 999 }}>
                                 Grade {d.grade} — {d.risk}
                             </div>
                         </div>
@@ -218,10 +221,13 @@ export default function UmkmDetail() {
                 </div>
 
                 {/* 4. Two Columns */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-xl)' }}>
+                <div
+                    className="detail-stack-responsive"
+                    style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-xl)' }}
+                >
 
                     {/* LEFT */}
-                    <div style={{ flex: '1 1 55%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
+                    <div className="mobile-full-width" style={{ flex: '1 1 55%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)', minWidth: 0 }}>
 
                         {/* RBF Contract */}
                         <div className="card">
@@ -301,14 +307,17 @@ export default function UmkmDetail() {
                     </div>
 
                     {/* RIGHT */}
-                    <div style={{ flex: '1 1 35%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
-                        <div className="card">
+                    <div className="mobile-full-width" style={{ flex: '1 1 35%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)', minWidth: 0 }}>
+                        <div className="card" style={{ overflowX: 'auto' }}>
                             <h2 className="card-title" style={{ marginBottom: 'var(--space-lg)' }}>Histori Omzet (6 Bulan)</h2>
                             <BarChart bars={d.bars} vals={d.vals} />
                         </div>
                         <div className="card">
                             <h2 className="card-title" style={{ marginBottom: 'var(--space-lg)' }}>Alokasi Dana</h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }}>
+                            <div
+                                className="mobile-stack"
+                                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }}
+                            >
                                 <div style={{ position: 'relative', width: 120, height: 120, borderRadius: '50%', background: `conic-gradient(${conicParts.join(', ')})` }}>
                                     <div style={{ position: 'absolute', inset: 20, background: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600 }}>100%</div>
                                 </div>

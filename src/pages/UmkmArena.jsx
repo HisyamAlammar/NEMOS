@@ -150,9 +150,12 @@ function UmkmCard({ umkm, navigate, userTier }) {
 
                 {/* Progress */}
                 <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280', fontWeight: 600, marginBottom: 5 }}>
+                    <div
+                        className="mobile-stack"
+                        style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280', fontWeight: 600, marginBottom: 5, gap: 4 }}
+                    >
                         <span>Terdanai {umkm.funded}%</span>
-                        <span style={{ color: '#1E3A5F', fontWeight: 700 }}>Rp {umkm.current} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>/ Rp {umkm.target}</span></span>
+                        <span style={{ color: '#1E3A5F', fontWeight: 700 }}>Rp {umkm.current} <span className="hide-on-mobile" style={{ color: '#9CA3AF', fontWeight: 500 }}>/ Rp {umkm.target}</span></span>
                     </div>
                     <div style={{ height: 7, background: '#F3F4F6', borderRadius: 4, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${umkm.funded}%`, background: '#00C853', borderRadius: 4 }} />
@@ -201,15 +204,20 @@ function UmkmCard({ umkm, navigate, userTier }) {
 export default function UmkmArena({ userTier = 'premium' }) {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('Semua');
+    const [search, setSearch] = useState('');
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
     const filteredUmkms = umkmList.filter(umkm => {
-        if (filter === 'Semua') return true;
-        if (filter === 'Grade A' && umkm.grade === 'A') return true;
-        if (filter === 'Grade B' && umkm.grade === 'B') return true;
-        if (filter === 'Grade C' && umkm.grade === 'C') return true;
-        // Add more filter logic here for other categories if needed
-        return false;
+        const matchesFilter = (filter === 'Semua') ||
+            (filter === 'Grade A' && umkm.grade === 'A') ||
+            (filter === 'Grade B' && umkm.grade === 'B') ||
+            (filter === 'Grade C' && umkm.grade === 'C') ||
+            (umkm.category === filter);
+
+        const matchesSearch = umkm.name.toLowerCase().includes(search.toLowerCase()) ||
+            umkm.location.toLowerCase().includes(search.toLowerCase());
+
+        return matchesFilter && matchesSearch;
     });
 
     return (
@@ -265,10 +273,46 @@ export default function UmkmArena({ userTier = 'premium' }) {
                         </div>
                     )}
 
-                    {/* Search */}
-                    <div style={{ position: 'relative', marginBottom: 12 }}>
-                        <svg viewBox="0 0 24 24" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, fill: 'none', stroke: '#9CA3AF', strokeWidth: 2 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                        <input type="text" placeholder="Cari nama UMKM, kota, atau kategori" style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 16px 0 46px', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 14, color: 'var(--color-text-pri)', outline: 'none', background: 'var(--color-bg)' }} />
+                    {/* Search and Filters Row */}
+                    <div
+                        className="mobile-stack"
+                        style={{ marginBottom: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}
+                    >
+                        <div className="mobile-full-width" style={{ position: 'relative', flex: 1, minWidth: 280 }}>
+                            <svg viewBox="0 0 24 24" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, fill: 'none', stroke: '#6B7280', strokeWidth: 2 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                            <input
+                                type="text"
+                                placeholder="Cari nama UMKM, kota, atau kategori"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{ width: '100%', height: 48, background: '#F3F4F6', border: '1px solid transparent', borderRadius: 12, padding: '0 16px 0 44px', fontSize: 14, transition: 'all 0.2s', outline: 'none' }}
+                            />
+                        </div>
+
+                        <div className="mobile-full-width" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            {['Semua', 'Grade A', 'Grade B', 'Grade C', 'Kuliner', 'Agrikultur', 'Kerajinan', 'Terfavorit'].map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    style={{
+                                        padding: '10px 18px',
+                                        borderRadius: 99,
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        whiteSpace: 'nowrap',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        border: '1px solid transparent',
+                                        background: filter === f ? 'var(--color-primary)' : '#fff',
+                                        color: filter === f ? '#fff' : 'var(--color-text-sec)',
+                                        boxShadow: filter === f ? '0 4px 12px rgba(30, 58, 95, 0.2)' : '0 2px 4px rgba(0,0,0,0.05)',
+                                        border: filter === f ? 'none' : '1px solid var(--color-border)'
+                                    }}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Education Gate Bar */}
@@ -276,17 +320,6 @@ export default function UmkmArena({ userTier = 'premium' }) {
                         <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: '#1E3A5F', strokeWidth: 2, flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                         <span style={{ fontSize: '12px', color: '#1E3A5F', fontWeight: 500, flex: 1 }}>Akses UMKM Grade B dan C hanya tersedia setelah menyelesaikan modul edukasi yang relevan.</span>
                         <a href="#" style={{ fontSize: '12px', color: '#1E3A5F', fontWeight: 700, textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}>Lihat kurikulum saya</a>
-                    </div>
-
-                    {/* Filter Tabs */}
-                    <div className="hide-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-                        {['Semua', 'Grade A', 'Grade B', 'Grade C', 'Kuliner', 'Agrikultur', 'Kerajinan', 'Terfavorit'].map((tab, i) => (
-                            <button key={tab}
-                                onClick={() => setFilter(tab)}
-                                style={{ padding: '7px 14px', borderRadius: 999, background: filter === tab ? 'var(--color-primary)' : 'transparent', color: filter === tab ? '#fff' : 'var(--color-text-sec)', border: filter === tab ? '1px solid var(--color-primary)' : '1px solid var(--color-border)', fontSize: 13, fontWeight: 600, flexShrink: 0, cursor: 'pointer', transition: 'all 0.15s' }}>
-                                {tab}
-                            </button>
-                        ))}
                     </div>
 
                 </div>

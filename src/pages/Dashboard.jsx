@@ -10,13 +10,19 @@ export default function Dashboard() {
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-2xl) var(--space-xl)' }}>
 
                 {/* 2. Page Header & Portfolio Summary */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-xl)', marginBottom: 'var(--space-2xl)' }}>
-                    <div>
+                <div
+                    className="mobile-stack"
+                    style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-xl)', marginBottom: 'var(--space-2xl)' }}
+                >
+                    <div className="mobile-full-width">
                         <h1 className="page-title" style={{ marginBottom: 4 }}>Selamat datang, Budi Santoso</h1>
                         <p className="text-muted" style={{ fontSize: '14px' }}>Rabu, 04 Maret 2026</p>
                     </div>
 
-                    <div style={{ background: '#fff', borderRadius: 'var(--radius)', padding: 'var(--space-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', minWidth: 320 }}>
+                    <div
+                        className="mobile-full-width"
+                        style={{ background: '#fff', borderRadius: 'var(--radius)', padding: 'var(--space-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', flex: 1 }}
+                    >
                         <div className="label-uppercase text-muted" style={{ marginBottom: 8 }}>Total Portofolio</div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
                             <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--color-text-pri)', lineHeight: 1 }}>Rp 15.750.000</div>
@@ -78,7 +84,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Card 2 — Smart Contract Repayment Tracker */}
-                        <div className="card" style={{ padding: 0 }}>
+                        <div className="card mobile-padding-sm" style={{ padding: 0 }}>
                             <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h2 className="card-title">Smart Contract Repayment Tracker</h2>
                                 <div className="badge badge-trust-blockchain">
@@ -97,7 +103,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* Table */}
-                            <div style={{ overflowX: 'auto' }}>
+                            <div className="table-responsive">
                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                     <thead>
                                         <tr>
@@ -198,7 +204,7 @@ export default function Dashboard() {
                     <div style={{ flex: '1 1 35%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
 
                         {/* Card 3 — UMKM Pilihan */}
-                        <div className="card">
+                        <div className="card mobile-padding-sm">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-lg)' }}>
                                 <div>
                                     <h2 className="card-title">UMKM Rekomendasi</h2>

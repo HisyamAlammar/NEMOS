@@ -302,7 +302,6 @@ export default function UmkmArena({ userTier = 'premium' }) {
                                         whiteSpace: 'nowrap',
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
-                                        border: '1px solid transparent',
                                         background: filter === f ? 'var(--color-primary)' : '#fff',
                                         color: filter === f ? '#fff' : 'var(--color-text-sec)',
                                         boxShadow: filter === f ? '0 4px 12px rgba(30, 58, 95, 0.2)' : '0 2px 4px rgba(0,0,0,0.05)',

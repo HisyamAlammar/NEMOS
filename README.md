@@ -68,7 +68,7 @@ NEMOS addresses the **$165B financing gap** for Indonesian MSMEs. By moving from
 ---
 
 ## 👤 Author
-Developed with passion for the **FINLIT Challenge**.
+Developed with passion for the **NEMOS Challenge**.
 - GitHub: [@HisyamAlammar](https://github.com/HisyamAlammar)
 
 ---

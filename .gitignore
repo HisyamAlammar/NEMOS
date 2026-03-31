@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ── Secrets (JANGAN PERNAH COMMIT) ──
+.env
+backend/.env
+blockchain/.env
+
+# ── Backend build ──
+backend/dist/
+backend/tsc_log.txt
+backend/prisma_log.txt
+
+# ── Blockchain build ──
+blockchain/cache/
+blockchain/artifacts/
+blockchain/typechain-types/
+blockchain/test_output.txt
+blockchain/compile_log.txt
+blockchain/deploy_log.txt
+blockchain/verify_log.txt

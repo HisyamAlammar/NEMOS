@@ -1,0 +1,153 @@
+// ─── NEMOS — Prisma Schema (Prisma 6) ───
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════════════
+// ENUMS
+// ══════════════════════════════════════════════
+
+enum Role {
+  INVESTOR
+  UMKM_OWNER
+}
+
+enum Tier {
+  FREE
+  PREMIUM
+}
+
+enum RiskProfile {
+  KONSERVATIF
+  MODERAT
+  AGRESIF
+}
+
+enum Grade {
+  A
+  B
+  C
+}
+
+enum InvestStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+}
+
+enum TxType {
+  INVESTMENT
+  REPAYMENT
+}
+
+enum TxStatus {
+  PENDING
+  BATCHING
+  CONFIRMED
+  FAILED
+}
+
+// ══════════════════════════════════════════════
+// MODELS
+// ══════════════════════════════════════════════
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  password         String
+  name             String
+  role             Role
+  tier             Tier         @default(FREE)
+  riskProfile      RiskProfile?
+  learningProgress Int          @default(0)
+  investments      Investment[]
+  umkm             UMKM?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model UMKM {
+  id          String       @id @default(cuid())
+  name        String
+  location    String
+  category    String
+  grade       Grade
+  target      BigInt
+  current     BigInt       @default(0)
+  rbfRate     Float
+  description String?
+  imageUrl    String?
+  ownerId     String       @unique
+  owner       User         @relation(fields: [ownerId], references: [id])
+  investments Investment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([grade])
+  @@index([category])
+}
+
+model Investment {
+  id           String        @id @default(cuid())
+  amount       BigInt
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  umkmId       String
+  umkm         UMKM          @relation(fields: [umkmId], references: [id])
+  xenditTxId   String        @unique
+  merkleLeaf   String?
+  status       InvestStatus  @default(PENDING)
+  tranches     Tranche[]
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([umkmId])
+  @@index([status])
+}
+
+model Tranche {
+  id           String      @id @default(cuid())
+  investId     String
+  investment   Investment  @relation(fields: [investId], references: [id])
+  stage        Int
+  amount       BigInt
+  aiVerified   Boolean     @default(false)
+  confidence   Int?
+  receiptUrl   String?
+  releasedAt   DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@index([investId])
+}
+
+model Transaction {
+  id            String      @id @default(cuid())
+  xenditId      String      @unique
+  type          TxType
+  amount        BigInt
+  polygonTxHash String?
+  merkleRoot    String?
+  merkleLeaf    String?
+  status        TxStatus    @default(PENDING)
+  investId      String?
+  investment    Investment? @relation(fields: [investId], references: [id])
+  rawPayload    Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([xenditId])
+  @@index([status])
+  @@index([createdAt])
+}

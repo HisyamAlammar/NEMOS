@@ -1,0 +1,17 @@
+﻿[dotenv@17.3.1] injecting env (3) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[36m[INFO] Sourcify Verification Skipped: Sourcify verification is currently disabled. To enable it, add the following entry to your Hardhat configuration:
+
+sourcify: {
+  enabled: true
+}
+
+Or set 'enabled' to false to hide this message.
+
+For more information, visit https://v2.hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify#verifying-on-sourcify[39m
+Successfully submitted source code for contract
+contracts/NemosEscrowLedger.sol:NemosEscrowLedger at 0x1aa24060c4Cc855b8437DBA3b592647C43c87012
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract NemosEscrowLedger on the block explorer.
+https://amoy.polygonscan.com/address/0x1aa24060c4Cc855b8437DBA3b592647C43c87012#code
+

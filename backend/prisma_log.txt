@@ -1,0 +1,13 @@
+﻿[dotenv@17.3.1] injecting env (7) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+node.exe : Failed to parse syntax of config 
+file at "D:\LOMBA 
+ABYAN\FINLIT\backend\prisma.config.ts"
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+   Failed to parse...isma.config.ts":String)  
+   [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandEr 
+   ror
+ 

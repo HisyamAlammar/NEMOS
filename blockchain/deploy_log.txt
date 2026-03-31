@@ -1,0 +1,66 @@
+﻿[dotenv@17.3.1] injecting env (3) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  NEMOS ΓÇö Smart Contract Deployment
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Network:  amoy
+  ChainId:  80002
+  Deployer: 0xFB28b1a820b437D85c0BFcc57A2EBa7DC3E04Ede
+  Balance:  0.1 MATIC/POL
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  Relayer:  0xFB28b1a820b437D85c0BFcc57A2EBa7DC3E04Ede
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓÅ│ Deploying NemosEscrowLedger...
+Γ£à Deployed at: 0x1aa24060c4Cc855b8437DBA3b592647C43c87012
+   TX Hash:     0x2934253ce9aac70f3ed415ff3d6a8fd3d78888450200a782348b42c2f286c5aa
+
+ΓÅ│ Waiting for 5 block confirmations...
+Γ£à 5 confirmations received.
+
+≡ƒôü Deployment info saved to: deployments/amoy.json
+
+ΓÅ│ Waiting 30s before Polygonscan verification...
+ΓÅ│ Verifying contract on Polygonscan...
+node.exe : [33m[WARNING] Network and 
+explorer-specific api keys are deprecated in 
+favour of the new Etherscan v2 api. Support 
+for v1 is expected to end by May 31st, 2025. 
+To migrate, please specify a single 
+Etherscan.io api key the apiKey config 
+value.[39m
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+   [33m[WARNING] ...fig value.[39m:String)  
+   [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandEr 
+   ror
+ 
+ΓÜá∩╕Å  Verification failed: You are using a 
+deprecated V1 endpoint, switch to Etherscan 
+API V2 using 
+https://docs.etherscan.io/v2-migration
+    You can verify manually:
+    npx hardhat verify --network amoy 0x1aa24060c4Cc855b8437DBA3b592647C43c87012 "0xFB28b1a820b437D85c0BFcc57A2EBa7DC3E04Ede"
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Γ£à DEPLOYMENT COMPLETE
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  Contract:  0x1aa24060c4Cc855b8437DBA3b592647C43c87012
+  Relayer:   0xFB28b1a820b437D85c0BFcc57A2EBa7DC3E04Ede
+  Network:   amoy (chainId: 80002)
+  TX Hash:   0x2934253ce9aac70f3ed415ff3d6a8fd3d78888450200a782348b42c2f286c5aa
+
+  ≡ƒöù View on Polygonscan:
+     https://amoy.polygonscan.com/address/0x1aa24060c4Cc855b8437DBA3b592647C43c87012
+
+  ≡ƒöù View TX:
+     https://amoy.polygonscan.com/tx/0x2934253ce9aac70f3ed415ff3d6a8fd3d78888450200a782348b42c2f286c5aa
+
+  ≡ƒôï Env vars untuk backend (Sprint 2):
+     NEMOS_CONTRACT_ADDRESS=0x1aa24060c4Cc855b8437DBA3b592647C43c87012
+     NEMOS_RELAYER_ADDRESS=0xFB28b1a820b437D85c0BFcc57A2EBa7DC3E04Ede
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuthStore } from '../stores/auth.store';
 
 const LESSONS = [
     {
@@ -69,12 +70,54 @@ const LESSONS = [
 
 export default function LearnHub({ userTier = 'premium' }) {
     const [activeLessonId, setActiveLessonId] = useState(1);
+    const [completedIds, setCompletedIds] = useState(() => {
+        // Restore from localStorage
+        try {
+            const saved = localStorage.getItem('nemos-learn-completed');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const updateLearningProgress = useAuthStore((s) => s.updateLearningProgress);
+
+    // Derive lesson statuses from completedIds
+    const lessons = useMemo(() => {
+        return LESSONS.map((lesson, idx) => {
+            if (completedIds.includes(lesson.id)) {
+                return { ...lesson, status: 'completed', progress: 100 };
+            }
+            // First uncompleted lesson is active
+            const isFirstUncompleted = idx === 0 || completedIds.includes(LESSONS[idx - 1].id);
+            if (isFirstUncompleted) {
+                return { ...lesson, status: 'active', progress: 0 };
+            }
+            return { ...lesson, status: 'locked', progress: 0 };
+        });
+    }, [completedIds]);
+
+    // Sync learning progress to auth store
+    useEffect(() => {
+        const progress = Math.round((completedIds.length / LESSONS.length) * 100);
+        updateLearningProgress(progress);
+        localStorage.setItem('nemos-learn-completed', JSON.stringify(completedIds));
+    }, [completedIds, updateLearningProgress]);
+
+    // Complete current lesson and unlock next
+    const completeLesson = (lessonId) => {
+        if (!completedIds.includes(lessonId)) {
+            const newCompleted = [...completedIds, lessonId];
+            setCompletedIds(newCompleted);
+            // Auto-advance to next lesson
+            const nextLesson = LESSONS.find(l => l.id > lessonId);
+            if (nextLesson) setActiveLessonId(nextLesson.id);
+        }
+    };
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    const activeLesson = LESSONS.find(l => l.id === activeLessonId) || LESSONS[0];
-    const completedCount = LESSONS.filter(l => l.status === 'completed').length;
+    const activeLesson = lessons.find(l => l.id === activeLessonId) || lessons[0];
+    const completedCount = completedIds.length;
     const totalLessons = LESSONS.length;
+    const overallProgress = Math.round((completedCount / totalLessons) * 100);
 
     // Simulate Premium Lock
     const isPremiumUnlockingRequired = userTier !== 'premium';
@@ -160,6 +203,43 @@ export default function LearnHub({ userTier = 'premium' }) {
                         <p style={{ fontSize: 15, color: '#475569', lineHeight: 1.6, maxWidth: 800 }}>
                             {activeLesson.description}
                         </p>
+
+                        {/* Complete Lesson Button */}
+                        {activeLesson.status === 'active' && (
+                            <button
+                                onClick={() => completeLesson(activeLesson.id)}
+                                id={`complete-lesson-${activeLesson.id}`}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                                    background: '#059669', color: '#fff',
+                                    padding: '10px 20px', borderRadius: 10,
+                                    fontSize: 14, fontWeight: 700,
+                                    border: 'none', cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                                onMouseOut={e => e.currentTarget.style.background = '#059669'}
+                            >
+                                <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2.5 }}>
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                Tandai Selesai & Lanjut
+                            </button>
+                        )}
+
+                        {/* Progress Bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                                <div style={{ width: `${overallProgress}%`, height: '100%', background: overallProgress >= 100 ? '#059669' : '#3B82F6', borderRadius: 3, transition: 'width 0.5s ease' }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: overallProgress >= 100 ? '#059669' : '#3B82F6' }}>{overallProgress}%</span>
+                        </div>
+                        {overallProgress >= 100 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 10, padding: '10px 16px', fontSize: 13, color: '#065F46', fontWeight: 600 }}>
+                                <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: 'none', stroke: '#059669', strokeWidth: 2 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                Selamat! Semua modul selesai. Anda sekarang bisa berinvestasi!
+                            </div>
+                        )}
                     </div>
 
                 </div>
@@ -181,7 +261,7 @@ export default function LearnHub({ userTier = 'premium' }) {
                     {/* List Container */}
                     <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {LESSONS.map((lesson) => {
+                            {lessons.map((lesson) => {
                                 const isActive = lesson.id === activeLessonId;
                                 const isLocked = lesson.status === 'locked' && isPremiumUnlockingRequired;
 

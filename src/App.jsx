@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import nemosLogo from './assets/NEMOS LOGO.png';
+import { useAuthStore } from './stores/auth.store';
 
 // Layout & Navigation CSS locally for the App shell
 import './index.css';
@@ -27,6 +28,9 @@ import Register from './pages/Register';
 function InvestorTopNav({ userTier, setUserTier }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+  const displayName = user?.name || 'Investor';
+  const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="investor-header" style={{ background: '#fff', borderBottom: '1px solid var(--color-border)', position: 'sticky', top: 0, zIndex: 100 }}>
@@ -53,7 +57,7 @@ function InvestorTopNav({ userTier, setUserTier }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
           <div style={{ textAlign: 'right' }} className="hide-on-mobile">
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Budi Santoso</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>{displayName}</div>
             <div style={{ marginTop: 3, position: 'relative' }} className="premium-badge-wrap">
               <span
                 onClick={() => setUserTier(userTier === 'premium' ? 'free' : 'premium')}
@@ -78,11 +82,11 @@ function InvestorTopNav({ userTier, setUserTier }) {
             </svg>
           </button>
 
-          <div className="hide-on-mobile" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
+          <div className="hide-on-mobile" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>{displayInitial}</div>
 
-          <NavLink to="/login" className="hide-on-mobile" style={{ color: 'var(--color-text-muted)', marginLeft: 8 }} title="Log Out">
+          <button onClick={() => { logout(); navigate('/login'); }} className="hide-on-mobile" style={{ color: 'var(--color-text-muted)', marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} title="Log Out">
             <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-          </NavLink>
+          </button>
         </div>
 
         {/* Mobile Dropdown Menu */}
@@ -96,10 +100,10 @@ function InvestorTopNav({ userTier, setUserTier }) {
             <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
-                <div style={{ fontSize: '14px', fontWeight: 600 }}>Budi Santoso</div>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>{displayInitial}</div>
+                <div style={{ fontSize: '14px', fontWeight: 600 }}>{displayName}</div>
               </div>
-              <NavLink to="/login" style={{ color: 'var(--color-danger)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Logout</NavLink>
+              <button onClick={() => { logout(); navigate('/login'); setMobileMenuOpen(false); }} style={{ color: 'var(--color-danger)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Logout</button>
             </div>
           </div>
         )}

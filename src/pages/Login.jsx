@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import nemosLogo from '../assets/NEMOS LOGO.png';
+import { useAuthStore } from '../stores/auth.store';
 
 export default function Login({ userRole = 'investor', setUserRole }) {
     const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const login = useAuthStore((s) => s.login);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (userRole === 'investor') {
-            navigate('/dashboard');
-        } else {
-            navigate('/umkm-dashboard');
+        setError('');
+        setLoading(true);
+
+        try {
+            const response = await login({ email, password });
+            const role = response.data.user.role;
+
+            // Sync the role switcher with actual user role
+            if (setUserRole) {
+                setUserRole(role === 'UMKM_OWNER' ? 'umkm_owner' : 'investor');
+            }
+
+            // Navigate based on actual role from backend
+            if (role === 'UMKM_OWNER') {
+                navigate('/umkm-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            setError(err.message || 'Email atau password salah');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -127,17 +151,47 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                         </div>
                     </div>
 
+                    {/* Error Message */}
+                    {error && (
+                        <div style={{
+                            background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
+                            padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#DC2626',
+                            display: 'flex', alignItems: 'center', gap: 8
+                        }}>
+                            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: '#DC2626', strokeWidth: 2, flexShrink: 0 }}>
+                                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                            </svg>
+                            {error}
+                        </div>
+                    )}
+
                     <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-pri)', marginBottom: '4px' }}>Alamat Email</label>
-                            <input type="email" defaultValue={userRole === 'investor' ? 'budi.santoso@email.com' : 'sari.dapur@email.com'} style={{ width: '100%', height: '40px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
+                            <input
+                                type="email"
+                                id="login-email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="email@contoh.com"
+                                required
+                                style={{ width: '100%', height: '40px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }}
+                            />
                         </div>
 
                         <div>
                             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-pri)', marginBottom: '4px' }}>Kata Sandi</label>
                             <div style={{ position: 'relative' }}>
-                                <input type={showPassword ? "text" : "password"} defaultValue="password123" style={{ width: '100%', height: '40px', padding: '0 36px 0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }}>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    id="login-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Masukkan kata sandi"
+                                    required
+                                    style={{ width: '100%', height: '40px', padding: '0 36px 0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }}
+                                />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                                     <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                 </button>
                             </div>
@@ -146,7 +200,20 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                             </div>
                         </div>
 
-                        <button type="submit" style={{ width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: 700, color: '#fff', background: userRole === 'umkm_owner' ? '#00C853' : '#1E3A5F', cursor: 'pointer', transition: 'opacity 0.2s', marginTop: 4 }} onMouseOver={e => e.currentTarget.style.opacity = '0.9'} onMouseOut={e => e.currentTarget.style.opacity = '1'}>Masuk</button>
+                        <button
+                            type="submit"
+                            id="login-submit"
+                            disabled={loading}
+                            style={{
+                                width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)',
+                                fontSize: '14px', fontWeight: 700, color: '#fff',
+                                background: loading ? '#9CA3AF' : (userRole === 'umkm_owner' ? '#00C853' : '#1E3A5F'),
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s', marginTop: 4
+                            }}
+                        >
+                            {loading ? 'Memproses...' : 'Masuk'}
+                        </button>
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
                             <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500 }}>{userRole === 'umkm_owner' ? 'Masuk ke Panel Usaha Anda' : 'Masuk ke Pusat Kendali Investasi'}</span>
                         </div>
@@ -163,7 +230,7 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                 </div>
             </div>
 
-            {/* Hide Sidebar & Mobile Header when Login is active for demo purposes */}
+            {/* Hide Sidebar & Mobile Header when Login is active */}
             <style>{`
         .sidebar, .mobile-header { display: none !important; }
         .main-content { margin-left: 0 !important; padding: 0 !important; }

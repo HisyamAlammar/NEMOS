@@ -1,63 +1,69 @@
-# SPRINT 6 — P0 CRITICAL BUGS
+# SPRINT 6 — P0 CRITICAL: SECURITY & PENETRATION TEST FINDINGS
+
+> **Audit Mode:** READ-ONLY & EXPLOITATION
+> **Auditor Role:** Lead DevSecOps / Principal Penetration Tester
+> **Date:** 2026-04-02
 
 ---
 
-- [x] **[P0-NEW-01] — Backend: Server CRASH on Startup — `redlock` Module Not Installed** → ✅ FIXED
-  **Fix:** `npm install` di folder `backend/` — modul redlock ter-install dari package.json.
-  **Verifikasi:** Server start sukses, semua service (PostgreSQL, Redis, BullMQ, Cron) connected.
+## Active Vulnerabilities
+
+- [ ] **[SEC-P0-01] [Auth] JWT Payload Tidak Memuat Tier — Client-Side State Spoofing**
+  **Eksploitasi:** JWT token yang di-generate (`auth.service.ts:86`) hanya memuat `{ userId, email, role }`. Field `tier` dan `learningProgress` TIDAK ada di JWT. Akibatnya, `POST /api/auth/upgrade-tier` men-cek tier dari DB (aman), TAPI frontend Zustand store (`auth.store.js:97-101`) memiliki `updateLearningProgress()` yang bisa dimanipulasi via DevTools:
+  ```js
+  // Di browser console:
+  useAuthStore.setState({ user: { ...useAuthStore.getState().user, learningProgress: 100, tier: 'PREMIUM' } })
+  ```
+  **Dampak:** Pengguna bisa *bypass* UI lockout Grade A/B tanpa upgrade. **NAMUN**, `investmentGateMiddleware` (`investmentGate.ts:43`) mem-fetch `learningProgress` dari DATABASE, bukan dari JWT/client. Artinya backend tetap aman, tapi **UI menampilkan akses palsu** (user melihat tombol "Konfirmasi Pendanaan" terbuka padahal API akan menolak).
+  **Severity:** MEDIUM-HIGH (UX deception, bukan data breach). Backend investment gate adalah **last line of defense yang berhasil**.
+  **Cara Reproduksi:** Login sebagai Free Tier → Buka DevTools → Console → Jalankan script di atas → Navigasi ke UmkmArena → Card Grade A/B terlihat unlocked.
 
 ---
 
-- [x] **[C-01] — Auth: Login.jsx Bypass — Masuk Tanpa Password** → ✅ SUDAH DIPERBAIKI SEBELUMNYA
-  **Status:** File `Login.jsx` di branch saat ini sudah correct: `useAuthStore.login()` dipanggil, controlled inputs, error handling lengkap.
-  **Verifikasi:** Backend returns `401 LOGIN_FAILED` untuk credential salah. UI menampilkan error saat field kosong.
+- [ ] **[SEC-P0-02] [Auth] Upgrade Tier Gratis Tanpa Payment Verification**
+  **Eksploitasi:** Endpoint `POST /api/auth/upgrade-tier` (`auth.routes.ts:123`) langsung mengubah `tier` ke `PREMIUM` tanpa validasi pembayaran apapun. Setiap user yang terautentikasi bisa mengirim request sederhana:
+  ```bash
+  curl -X POST http://localhost:4000/api/auth/upgrade-tier \
+    -H "Authorization: Bearer <any_valid_jwt>"
+  ```
+  **Dampak:** CRITICAL — Semua pengguna Free bisa upgrade ke Premium secara gratis, mem-bypass seluruh monetisasi platform.
+  **Cara Reproduksi:** Login → Copy JWT token dari localStorage → Kirim POST request di atas → Tier berubah ke PREMIUM tanpa bayar.
+  **Catatan:** Endpoint ini sengaja dibuat tanpa payment untuk hackathon demo. Untuk produksi, WAJIB dihubungkan ke flow Xendit sebenarnya.
 
 ---
 
-- [x] **[C-01b] — Auth: Login.jsx Password Hardcoded di defaultValue** → ✅ SUDAH DIPERBAIKI SEBELUMNYA
-  **Status:** Input menggunakan `value={email}` / `value={password}` (controlled), `placeholder` text (bukan `defaultValue`).
+- [ ] **[SEC-P0-03] [API] Zero Rate Limiting di Seluruh Endpoint**
+  **Eksploitasi:** Tidak ada `express-rate-limit`, `helmet`, atau middleware proteksi brute-force apapun di `app.ts`. Seluruh endpoint terbuka untuk:
+  1. **Brute-force login:** `POST /api/auth/login` bisa di-spam ribuan kali per detik tanpa lockout.
+  2. **Invoice flooding:** `POST /api/invest` bisa di-spam untuk membuat ribuan invoice Xendit QRIS (DDoS pada payment gateway + DB pollution).
+  3. **Webhook amplification:** `POST /api/webhooks/xendit` bisa di-spam dari source manapun.
+  **Dampak:** CRITICAL — Brute-force credential attack, Xendit API quota exhaustion, database overflow.
+  **Cara Reproduksi:** `for i in {1..1000}; do curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"x","password":"y"}'; done`
 
 ---
 
-- [x] **[P0-NEW-02] — Payment: Konfirmasi Pendanaan Tidak Memicu Xendit** → ✅ FIXED
-  **Root Cause:** Tombol "Konfirmasi Pendanaan" (UmkmDetail.jsx line 373) tidak memiliki `onClick` handler.
-  **Fix:**
-  1. **Toast Component** — `src/components/Toast.jsx` (NEW): Reusable notification system dengan 4 variant (success/error/loading/info), auto-dismiss, slide-in animation, dan `useToast` hook.
-  2. **PaymentModal Component** — `src/components/PaymentModal.jsx` (NEW): Menampilkan QRIS code dari Xendit, live countdown timer, backdrop blur, scale-in animation.
-  3. **Invest API** — `src/lib/invest.api.js` (MODIFY): Fungsi `createInvestment(umkmId, amount)` yang memanggil `POST /api/invest`.
-  4. **UmkmDetail.jsx** (MODIFY): Tombol di-wire ke `handleInvest()`:
-     - Validasi auth + minimum amount
-     - Loading toast → POST /api/invest → Success/Error toast
-     - On success: Render PaymentModal dengan QRIS data
-  **Verifikasi:** Vite build 69 modules, 0 errors. Backend tsc --noEmit 0 errors.
+- [ ] **[SEC-P0-04] [Webhook] AdminGuard Menggunakan String Comparison Tanpa Timing-Safe**
+  **Eksploitasi:** Di `blockchain.routes.ts:54`, `adminGuard` membandingkan `internalSecret === expectedSecret` menggunakan operator `===` standar JavaScript. Ini **rentan timing attack** — penyerang bisa mengukur waktu respons untuk menebak secret byte-per-byte. Bandingkan dengan `xendit.service.ts:116` yang sudah menggunakan `crypto.timingSafeEqual()` dengan benar.
+  **Dampak:** HIGH — Secret `ADMIN_INTERNAL_SECRET` bisa di-leak secara perlahan via timing side-channel.
+  **Cara Reproduksi:** Kirim ratusan request dengan variasi prefix secret yang berbeda → Ukur response time → Byte yang cocok akan memberikan respons sedikit lebih lambat.
 
 ---
 
-- [x] **[P0-NEW-03] — Payment: Upgrade Tier Premium Tanpa Transaksi** → ✅ FIXED
-  **Root Cause:** Toggle Premium/Free di Navbar hanya ubah React state lokal, tidak ada API call.
-  **Fix:**
-  1. **Backend Endpoint** — `POST /api/auth/upgrade-tier` (auth.routes.ts NEW endpoint): Updates `User.tier` ke `PREMIUM` di DB, returns updated user data.
-  2. **UpgradeModal Component** — `src/components/UpgradeModal.jsx` (NEW): Premium upgrade modal dengan golden gradient header, pricing (Rp 49.000/bulan), feature list, dan API call ke backend.
-  3. **UmkmArena.jsx** (MODIFY): "Upgrade Sekarang →" button sekarang membuka UpgradeModal (bukan navigate ke /register).
-  4. **Zustand Sync**: Setelah upgrade berhasil, `refreshUser()` dipanggil untuk sinkronisasi `user.tier` ke global state.
-  **Verifikasi:** Vite build sukses. Backend tsc 0 errors.
+- [ ] **[SEC-P0-05] [Auth] Tidak Ada Email Format Validation di Backend**
+  **Eksploitasi:** `POST /api/auth/register` (`auth.routes.ts:20`) hanya memeriksa `!email` (truthy check). Tidak ada regex atau library validasi email. User bisa mendaftar dengan email invalid:
+  ```bash
+  curl -X POST http://localhost:4000/api/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"not-an-email","password":"12345678","name":"Hacker","role":"INVESTOR"}'
+  ```
+  **Dampak:** MEDIUM — Database polusi, impossible email recovery, juga bisa digunakan untuk membuat user tak terlacak.
+  **Cara Reproduksi:** Kirim request di atas → Status 201 (berhasil).
 
 ---
 
-## File yang Dimodifikasi/Dibuat (Wave 2)
+## Previously Fixed (Sprint 6 Wave 1+2) — Verified Secure
 
-| # | File | Aksi | Bug |
-|---|------|------|-----|
-| 1 | `src/components/Toast.jsx` | **NEW** | P0-NEW-02 |
-| 2 | `src/components/PaymentModal.jsx` | **NEW** | P0-NEW-02 |
-| 3 | `src/components/UpgradeModal.jsx` | **NEW** | P0-NEW-03 |
-| 4 | `src/lib/invest.api.js` | MODIFY | P0-NEW-02, P0-NEW-03 |
-| 5 | `src/pages/UmkmDetail.jsx` | MODIFY | P0-NEW-02 |
-| 6 | `src/pages/UmkmArena.jsx` | MODIFY | P0-NEW-03 |
-| 7 | `backend/src/routes/auth.routes.ts` | MODIFY | P0-NEW-03 |
-| 8 | `backend/src/routes/umkm.routes.ts` | MODIFY (TS fix) | Maintenance |
-
-## Ringkasan FINAL
-- Total P0 bugs (Wave 1 + Wave 2): **5**
-- Semua FIXED: **5/5** ✅
-- Sisa: **0**
+- [x] **[C-01] Login Bypass** → ✅ Controlled inputs + API call
+- [x] **[P0-NEW-01] Server Crash (redlock)** → ✅ Installed
+- [x] **[P0-NEW-02] Konfirmasi Pendanaan Dead** → ✅ Wired to Xendit
+- [x] **[P0-NEW-03] Upgrade Tier UI** → ✅ UpgradeModal (tapi perlu payment gate — lihat SEC-P0-02)

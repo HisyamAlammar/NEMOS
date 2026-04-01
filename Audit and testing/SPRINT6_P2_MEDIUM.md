@@ -44,7 +44,50 @@
 
 ---
 
-## File yang Dimodifikasi/Dibuat
+## ⚡ BUG BARU (Wave 2 — Evaluasi Manual CTO)
+
+- [ ] **[P2-NEW-01] — Fitur: Form Transaksi & Rekonsiliasi Cash Mati (Panel UMKM)**
+  **Severity:** MEDIUM — Fitur operasional UMKM tidak berfungsi.
+  **Lokasi:** `src/pages/UmkmDashboard.jsx`
+  **Temuan:** Halaman UmkmDashboard tidak memiliki fitur interaktif "Pengajuan Transaksi"
+  dan "Rekonsiliasi Cash". Search di seluruh `src/` tidak menemukan action handler untuk
+  kedua fitur ini.
+  **Yang Harus Dilakukan:**
+  1. Identifikasi atau buat section "Pengajuan Transaksi" di UmkmDashboard
+  2. Buat form input untuk nominal dan deskripsi transaksi
+  3. Wire ke backend endpoint (atau buat baru `POST /api/umkm/transaction`)
+  4. "Rekonsiliasi Cash": Buat UI toggle/form untuk UMKM owner mencatat penerimaan tunai
+  5. Tampilkan Toast sukses/gagal setelah submit
+  **Catatan:** Fitur ini penting untuk transparansi dan audit trail UMKM.
+
+---
+
+- [ ] **[P2-NEW-02] — Fitur: Komunitas Investor "Kirim Update" Statis**
+  **Severity:** MEDIUM — Komunikasi UMKM↔Investor tidak tersinkronisasi.
+  **Lokasi:** `src/pages/UmkmKomunitas.jsx` (line 24-29, 155-200)
+  **Temuan:**
+  ```jsx
+  const handleSend = () => {
+      if (!message.trim()) return;
+      setSent(true);           // Hanya ubah state lokal
+      setMessage('');
+      setTimeout(() => setSent(false), 3000);  // Reset setelah 3 detik
+  };
+  ```
+  - `handleSend` hanya set `sent=true` → **tidak ada API call**
+  - Pesan yang dikirim **tidak muncul di bawah input** sebagai history
+  - Pesan **tidak tersinkronisasi** ke panel Investor
+  - Data investor (`investors` array line 3-9) sepenuhnya hardcoded
+  **Yang Harus Dilakukan:**
+  1. Buat state `sentMessages[]` untuk menyimpan riwayat pesan lokal
+  2. Render pesan baru di bawah form input (append ke UI immediately)
+  3. Opsional: Wire ke backend (`POST /api/umkm/broadcast`) untuk persistensi
+  4. Toast notification: "Update berhasil dikirim ke X investor"
+  **Catatan:** Untuk scope hackathon, local-state append sudah cukup tanpa backend persistence.
+
+---
+
+## File yang Dimodifikasi/Dibuat (Wave 1)
 
 | # | File | Aksi | Bug |
 |---|------|------|-----|
@@ -54,8 +97,7 @@
 | 4 | `src/pages/UmkmArena.jsx` | MODIFY (API fetch) | M-04 |
 | 5 | `src/pages/UmkmDetail.jsx` | MODIFY (API fetch + TX fix) | M-03, M-04 |
 
-## Ringkasan FINAL
-- Total P2 bugs: **3** (M-01, M-03, M-04)
-- Fixed sekarang: **2** (M-03, M-04)
-- Sudah fixed sebelumnya (konfirmasi): **1** (M-01)
-- Sisa: **0**
+## Ringkasan
+- Total P2 bugs (Wave 1): **3** — semua ✅ FIXED
+- Total P2 bugs (Wave 2): **2** — menunggu eksekusi
+- **TOTAL SISA: 2**

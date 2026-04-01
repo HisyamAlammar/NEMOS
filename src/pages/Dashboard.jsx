@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getUmkmImage } from '../constants/umkmImages';
+import { useAuthStore } from '../stores/auth.store';
 
 export default function Dashboard() {
+    const user = useAuthStore((s) => s.user);
+    const userName = user?.name || 'Investor';
     useEffect(() => { window.scrollTo(0, 0); }, []);
     return (
         <div className="view" style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingBottom: 'var(--space-3xl)' }}>
@@ -15,7 +18,7 @@ export default function Dashboard() {
                     style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-xl)', marginBottom: 'var(--space-2xl)' }}
                 >
                     <div className="mobile-full-width">
-                        <h1 className="page-title" style={{ marginBottom: 4 }}>Selamat datang, Budi Santoso</h1>
+                        <h1 className="page-title" style={{ marginBottom: 4 }}>Selamat datang, {userName}</h1>
                         <p className="text-muted" style={{ fontSize: '14px' }}>Rabu, 04 Maret 2026</p>
                     </div>
 

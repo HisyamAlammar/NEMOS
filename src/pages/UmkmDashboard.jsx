@@ -1,10 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import nemosLogo from '../assets/NEMOS LOGO.png';
+import { useAuthStore } from '../stores/auth.store';
+import Toast, { useToast } from '../components/Toast';
 
 export default function UmkmDashboard() {
     const navigate = useNavigate();
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    const user = useAuthStore((s) => s.user);
+    const ownerName = user?.name || 'Pengusaha';
+    useEffect(() => { window.scrollTo(0, 0); }, []);;
 
     // ── Wizard of Oz Video Verification State [GEM-03] ──────
     const [showVideoModal, setShowVideoModal] = useState(false);
@@ -12,6 +16,12 @@ export default function UmkmDashboard() {
     const [cameraStream, setCameraStream] = useState(null);
     const [cameraError, setCameraError] = useState(null);
     const videoRef = useRef(null);
+    const { toast, showToast } = useToast();
+
+    // ── Cash Reconciliation Form State [P2-NEW-01] ───────
+    const [cashCategory, setCashCategory] = useState('');
+    const [cashAmount, setCashAmount] = useState('');
+    const [cashTransactions, setCashTransactions] = useState([]);
 
     // ── Camera lifecycle ───────────────────────────────────
     useEffect(() => {
@@ -100,13 +110,13 @@ export default function UmkmDashboard() {
                 <div className="card" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2xl)', marginBottom: 'var(--space-2xl)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }}>
                         <div style={{ position: 'relative' }}>
-                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150" alt="Ibu Sari" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150" alt={ownerName} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, background: 'var(--color-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: '#00C853', stroke: 'none' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                             </div>
                         </div>
                         <div>
-                            <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text-pri)', marginBottom: 2 }}>Selamat datang, Bu Sari</h1>
+                            <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text-pri)', marginBottom: 2 }}>Selamat datang, {ownerName}</h1>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: 6 }}>Dapur Nusantara</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '13px', color: 'var(--color-text-sec)', fontWeight: 500 }}>
                                 <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
@@ -297,7 +307,10 @@ export default function UmkmDashboard() {
 
                             <div style={{ display: 'flex', gap: 12, marginBottom: 'var(--space-xl)' }}>
                                 <div style={{ flex: 1 }}>
-                                    <select style={{ width: '100%', height: 44, padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)', outline: 'none' }}>
+                                    <select
+                                        value={cashCategory}
+                                        onChange={e => setCashCategory(e.target.value)}
+                                        style={{ width: '100%', height: 44, padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)', outline: 'none' }}>
                                         <option value="">Kategori Transaksi</option>
                                         <option value="langsung">Penjualan Langsung</option>
                                         <option value="event">Event/Bazar</option>
@@ -307,13 +320,32 @@ export default function UmkmDashboard() {
                                 </div>
                                 <div style={{ flex: 1, position: 'relative' }}>
                                     <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: '16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>Rp</div>
-                                    <input type="text" placeholder="0" style={{ width: '100%', height: 44, padding: '0 16px 0 48px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '16px', fontWeight: 600, color: 'var(--color-text-pri)', outline: 'none' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="0"
+                                        value={cashAmount}
+                                        onChange={e => setCashAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                        style={{ width: '100%', height: 44, padding: '0 16px 0 48px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '16px', fontWeight: 600, color: 'var(--color-text-pri)', outline: 'none' }}
+                                    />
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                                <button className="btn btn-secondary" style={{ flex: 1, padding: '0 12px', fontSize: '14px' }}>Simpan Draft</button>
-                                <button className="btn" style={{ flex: 1, padding: '0 12px', fontSize: '14px', background: '#1E3A5F', color: '#fff', border: 'none' }}>Ajukan untuk Diverifikasi</button>
+                                <button className="btn btn-secondary" style={{ flex: 1, padding: '0 12px', fontSize: '14px' }}
+                                    onClick={() => {
+                                        if (!cashAmount) { showToast('Masukkan nominal transaksi', 'error'); return; }
+                                        showToast('Draft transaksi tersimpan', 'success');
+                                    }}
+                                >Simpan Draft</button>
+                                <button className="btn" style={{ flex: 1, padding: '0 12px', fontSize: '14px', background: '#1E3A5F', color: '#fff', border: 'none' }}
+                                    onClick={() => {
+                                        if (!cashCategory || !cashAmount) { showToast('Lengkapi kategori dan nominal', 'error'); return; }
+                                        const amt = Number(cashAmount);
+                                        setCashTransactions(prev => [...prev, { category: cashCategory, amount: amt, date: new Date().toLocaleDateString('id-ID'), status: 'Menunggu Verifikasi' }]);
+                                        setCashCategory(''); setCashAmount('');
+                                        showToast(`Transaksi Rp ${amt.toLocaleString('id-ID')} berhasil diajukan!`, 'success');
+                                    }}
+                                >Ajukan untuk Diverifikasi</button>
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
                                 Tim NEMOS akan memverifikasi data cash dalam 1x24 jam sebelum dikunci ke blockchain.
@@ -567,6 +599,32 @@ export default function UmkmDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Submitted Cash Transactions [P2-NEW-01] */}
+            {cashTransactions.length > 0 && (
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 var(--space-xl) var(--space-xl)' }}>
+                    <div className="card">
+                        <h2 className="card-title" style={{ marginBottom: 'var(--space-md)' }}>Transaksi Cash Diajukan</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {cashTransactions.map((tx, i) => (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#FFFDE7', border: '1px solid #FFE082', borderRadius: 8 }}>
+                                    <div>
+                                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1E3A5F', textTransform: 'capitalize' }}>{tx.category}</div>
+                                        <div style={{ fontSize: 12, color: '#9CA3AF' }}>{tx.date}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <span style={{ fontSize: 15, fontWeight: 700 }}>Rp {tx.amount.toLocaleString('id-ID')}</span>
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: '#F59E0B', background: '#FFF8E1', padding: '3px 8px', borderRadius: 4 }}>{tx.status}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            <Toast {...toast} />
 
             {/* Modal animations */}
             <style>{`

@@ -117,3 +117,36 @@ authRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
     });
   }
 });
+
+// ── POST /api/auth/upgrade-tier ───────────────────────────
+// Sprint 6 [P0-NEW-03]: Upgrade user tier to PREMIUM
+authRouter.post("/upgrade-tier", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { prisma } = await import("../services/prisma.service");
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { tier: "PREMIUM" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        tier: true,
+        learningProgress: true,
+      },
+    });
+
+    res.json({
+      message: "Upgrade ke Premium berhasil!",
+      data: updatedUser,
+    });
+  } catch (error: any) {
+    console.error("[AUTH] Upgrade tier error:", error.message);
+    res.status(500).json({
+      error: "INTERNAL_ERROR",
+      message: "Gagal mengupgrade tier",
+    });
+  }
+});

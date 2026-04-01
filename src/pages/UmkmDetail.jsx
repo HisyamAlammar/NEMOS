@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
 import { fetchUmkmDetail } from '../lib/umkm.api';
+import { createInvestment } from '../lib/invest.api';
+import { useAuthStore } from '../stores/auth.store';
+import Toast, { useToast } from '../components/Toast';
+import PaymentModal from '../components/PaymentModal';
 
 // ── Polygon Amoy Explorer Base URL ────────────────────────────
 const POLYGONSCAN_BASE = 'https://amoy.polygonscan.com';
@@ -128,6 +132,37 @@ export default function UmkmDetail() {
     const { id } = useParams();
     const [investValue, setInvestValue] = useState(1000000);
     const [d, setD] = useState(DEMO_UMKM_DATA[id] || DEMO_UMKM_DATA[0]);
+    const [isInvesting, setIsInvesting] = useState(false);
+    const [paymentData, setPaymentData] = useState(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const { toast, showToast } = useToast();
+    const user = useAuthStore((s) => s.user);
+    const isAuthenticated = useAuthStore((s) => !!s.token);
+
+    // ── Handle Konfirmasi Pendanaan → Xendit QRIS ──────
+    const handleInvest = async () => {
+        if (!isAuthenticated) {
+            showToast('Silakan login terlebih dahulu', 'error');
+            return;
+        }
+        if (investValue < 100000) {
+            showToast('Minimum investasi Rp 100.000', 'error');
+            return;
+        }
+        setIsInvesting(true);
+        showToast('Memproses pembayaran...', 'loading');
+        try {
+            const response = await createInvestment(d.id || id, investValue);
+            setPaymentData(response.data.payment);
+            setShowPaymentModal(true);
+            showToast('QRIS berhasil dibuat! Silakan scan.', 'success');
+        } catch (err) {
+            const msg = err.data?.message || err.message || 'Gagal memproses investasi';
+            showToast(msg, 'error');
+        } finally {
+            setIsInvesting(false);
+        }
+    };
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -370,9 +405,27 @@ export default function UmkmDetail() {
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>Nilai Investasi:</div>
                         <div style={{ fontSize: 20, fontWeight: 800 }}>{formatRp(investValue)}</div>
                     </div>
-                    <button className="btn btn-primary" style={{ width: 240, height: 48, fontSize: 15 }}>Konfirmasi Pendanaan</button>
+                    <button
+                        className="btn btn-primary"
+                        style={{ width: 240, height: 48, fontSize: 15, opacity: isInvesting ? 0.7 : 1, cursor: isInvesting ? 'not-allowed' : 'pointer' }}
+                        onClick={handleInvest}
+                        disabled={isInvesting}
+                    >
+                        {isInvesting ? 'Memproses...' : 'Konfirmasi Pendanaan'}
+                    </button>
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            <Toast {...toast} />
+
+            {/* Xendit QRIS Payment Modal */}
+            <PaymentModal
+                visible={showPaymentModal}
+                paymentData={paymentData}
+                umkmName={d.name}
+                onClose={() => setShowPaymentModal(false)}
+            />
         </div>
     );
 }

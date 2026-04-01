@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUmkmImage } from '../constants/umkmImages';
 import { fetchUmkmList } from '../lib/umkm.api';
+import Toast, { useToast } from '../components/Toast';
+import UpgradeModal from '../components/UpgradeModal';
+import { useAuthStore } from '../stores/auth.store';
 
 // ── RISK MAP ─────────────────────────────────────────────────
 const GRADE_RISK = { A: 'Low Risk', B: 'Moderate Risk', C: 'Higher Risk' };
@@ -211,6 +214,10 @@ export default function UmkmArena({ userTier = 'premium' }) {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('Semua');
     const [search, setSearch] = useState('');
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const { toast, showToast } = useToast();
+    const user = useAuthStore((s) => s.user);
+    const userName = user?.name || 'Investor';
     const [umkms, setUmkms] = useState(DEMO_UMKM_LIST);
     const [dataSource, setDataSource] = useState('demo'); // 'api' | 'demo'
 
@@ -269,7 +276,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
                             <p className="text-muted" style={{ fontSize: '14px', maxWidth: 400 }}>UMKM terverifikasi yang sesuai dengan profil investasi Anda</p>
                         </div>
                         <div className="pill pill-pending" style={{ padding: '6px 16px', fontSize: '13px', flexShrink: 0 }}>
-                            Status AI: Konservatif — Budi Santoso
+                            Status AI: Konservatif — {userName}
                         </div>
                     </div>
 
@@ -290,7 +297,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
                                 </span>
                             </div>
                             <button
-                                onClick={() => navigate('/register')}
+                                onClick={() => setShowUpgradeModal(true)}
                                 style={{ fontSize: 13, fontWeight: 700, color: '#FF9800', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', padding: 0 }}
                             >
                                 Upgrade Sekarang →
@@ -368,6 +375,17 @@ export default function UmkmArena({ userTier = 'premium' }) {
                     ))}
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            <Toast {...toast} />
+
+            {/* Premium Upgrade Modal */}
+            <UpgradeModal
+                visible={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                onSuccess={() => setShowUpgradeModal(false)}
+                showToast={showToast}
+            />
         </div>
     );
 }

@@ -64,9 +64,9 @@ umkmRouter.get("/", async (_req: Request, res: Response) => {
 // ── GET SINGLE UMKM DETAIL ───────────────────────────────
 umkmRouter.get("/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
-    const umkm = await prisma.uMKM.findUnique({
+    const umkm: any = await prisma.uMKM.findUnique({
       where: { id },
       include: {
         owner: {
@@ -104,9 +104,9 @@ umkmRouter.get("/:id", async (req: Request, res: Response) => {
 
     // Get the latest real polygon TX hash from confirmed transactions
     const allTxHashes = umkm.investments
-      .flatMap((inv) => inv.transactions)
-      .filter((tx) => tx.polygonTxHash)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .flatMap((inv: any) => inv.transactions)
+      .filter((tx: any) => tx.polygonTxHash)
+      .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const latestTxHash = allTxHashes.length > 0
       ? allTxHashes[0].polygonTxHash

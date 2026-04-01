@@ -22,7 +22,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     "/verify-receipt",
     response_model=ReceiptVerifyResponse,
     summary="Verify UMKM receipt using AI",
-    description="Upload a receipt image. Gemini Vision extracts date, total, "
+    description="Upload a receipt image. NVIDIA NIM Mistral Vision extracts date, total, "
                 "merchant name, and returns a confidence score.",
 )
 async def verify_receipt(
@@ -61,7 +61,7 @@ async def verify_receipt(
             detail="File kosong.",
         )
 
-    # ── SEND TO GEMINI VISION ──────────────────────────────
+    # ── SEND TO NVIDIA NIM (MISTRAL VISION) ─────────────────
     result = await analyze_receipt(image_bytes, receipt.content_type)
 
     confidence = result["confidence"]

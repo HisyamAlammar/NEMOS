@@ -1,7 +1,7 @@
 """
 main.py — FastAPI Application Entry Point
 
-NEMOS AI Microservice — Receipt OCR via Gemini Vision API
+NEMOS AI Microservice — Receipt OCR via NVIDIA NIM (Mistral Large 3)
 
 Startup:
   cd ai-service
@@ -14,7 +14,7 @@ from routers.ocr import router as ocr_router
 
 app = FastAPI(
     title="NEMOS AI Service",
-    description="Receipt OCR verification using Gemini Vision API",
+    description="Receipt OCR verification using NVIDIA NIM (Mistral Large 3 Vision)",
     version="1.0.0",
     docs_url="/docs",      # Swagger UI
     redoc_url="/redoc",    # ReDoc
@@ -39,7 +39,8 @@ async def health_check():
     return {
         "status": "ok",
         "service": "NEMOS AI Microservice",
-        "model": "gemini-2.0-flash",
+        "model": "mistralai/mistral-large-3-675b-instruct-2512",
+        "provider": "NVIDIA NIM",
     }
 
 

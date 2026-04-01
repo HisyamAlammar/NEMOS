@@ -325,7 +325,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
             </div>
 
             {/* Card Grid */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-2xl) var(--space-xl)' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-2xl) var(--space-xl)', paddingBottom: 80 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
                     {filteredUmkms.map(umkm => (
                         <UmkmCard key={umkm.id} umkm={umkm} navigate={navigate} userTier={userTier} />

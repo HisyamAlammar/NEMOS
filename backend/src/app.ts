@@ -11,6 +11,7 @@ import cors from "cors";
 import { authRouter } from "./routes/auth.routes";
 import { investRouter } from "./routes/invest.routes";
 import { webhookRouter } from "./routes/webhook.routes";
+import { blockchainRouter } from "./routes/blockchain.routes";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use(express.json({ limit: "10mb" }));
 // ── ROUTES ────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
 app.use("/api", investRouter);
+app.use("/api/blockchain", blockchainRouter);
 
 // ── HEALTH CHECK ──────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

@@ -1,18 +1,44 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/auth.store';
 import nemosLogo from '../assets/NEMOS LOGO.png';
 
 export default function Login({ userRole = 'investor', setUserRole }) {
     const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const login = useAuthStore((state) => state.login);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (userRole === 'investor') {
-            navigate('/dashboard');
-        } else {
-            navigate('/umkm-dashboard');
+        setError('');
+
+        if (!email.trim() || !password.trim()) {
+            setError('Email dan password wajib diisi');
+            return;
         }
+
+        setIsLoading(true);
+        try {
+            await login({ email: email.trim(), password });
+            const user = useAuthStore.getState().user;
+            if (user?.role === 'UMKM_OWNER') {
+                navigate('/umkm-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            setError(err.message || 'Login gagal. Periksa email dan password Anda.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const clearError = () => {
+        if (error) setError('');
     };
 
     return (
@@ -130,13 +156,13 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                     <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-pri)', marginBottom: '4px' }}>Alamat Email</label>
-                            <input type="email" defaultValue={userRole === 'investor' ? 'budi.santoso@email.com' : 'sari.dapur@email.com'} style={{ width: '100%', height: '40px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
+                            <input type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); clearError(); }} placeholder="Masukkan email Anda" style={{ width: '100%', height: '40px', padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
                         </div>
 
                         <div>
                             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-pri)', marginBottom: '4px' }}>Kata Sandi</label>
                             <div style={{ position: 'relative' }}>
-                                <input type={showPassword ? "text" : "password"} defaultValue="password123" style={{ width: '100%', height: '40px', padding: '0 36px 0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
+                                <input type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => { setPassword(e.target.value); clearError(); }} placeholder="Masukkan kata sandi" style={{ width: '100%', height: '40px', padding: '0 36px 0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: '13px', outline: 'none' }} />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }}>
                                     <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                 </button>
@@ -146,7 +172,13 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                             </div>
                         </div>
 
-                        <button type="submit" style={{ width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: 700, color: '#fff', background: userRole === 'umkm_owner' ? '#00C853' : '#1E3A5F', cursor: 'pointer', transition: 'opacity 0.2s', marginTop: 4 }} onMouseOver={e => e.currentTarget.style.opacity = '0.9'} onMouseOut={e => e.currentTarget.style.opacity = '1'}>Masuk</button>
+                        {error && (
+                            <div style={{ padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: '#DC2626', lineHeight: 1.4 }}>
+                                {error}
+                            </div>
+                        )}
+
+                        <button type="submit" disabled={isLoading} style={{ width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: 700, color: '#fff', background: userRole === 'umkm_owner' ? '#00C853' : '#1E3A5F', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s', marginTop: 4 }} onMouseOver={e => { if (!isLoading) e.currentTarget.style.opacity = '0.9'; }} onMouseOut={e => { if (!isLoading) e.currentTarget.style.opacity = '1'; }}>{isLoading ? 'Memproses...' : 'Masuk'}</button>
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
                             <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500 }}>{userRole === 'umkm_owner' ? 'Masuk ke Panel Usaha Anda' : 'Masuk ke Pusat Kendali Investasi'}</span>
                         </div>

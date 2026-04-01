@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Toast, { useToast } from '../components/Toast';
 
 const investors = [
     { initials: 'BS', name: '@BudiSantoso', label: 'Investor Aktif', amount: 1500000, date: '12 Jan 2026', color: '#1E3A5F' },
@@ -20,11 +21,21 @@ export default function UmkmKomunitas() {
     useEffect(() => { window.scrollTo(0, 0); }, []);
     const [message, setMessage] = useState('');
     const [sent, setSent] = useState(false);
+    const [sentMessages, setSentMessages] = useState([]);
+    const { toast, showToast } = useToast();
 
     const handleSend = () => {
         if (!message.trim()) return;
+        const newMsg = {
+            text: message.trim(),
+            date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            views: Math.floor(80 + Math.random() * 47),
+        };
+        setSentMessages(prev => [newMsg, ...prev]);
         setSent(true);
         setMessage('');
+        showToast(`Update berhasil dikirim ke 127 investor!`, 'success');
         setTimeout(() => setSent(false), 3000);
     };
 
@@ -199,6 +210,21 @@ export default function UmkmKomunitas() {
                         </div>
                     </div>
 
+                    {/* Newly Sent Updates [P2-NEW-02] */}
+                    {sentMessages.map((msg, i) => (
+                        <div key={i} style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, padding: '20px 24px', marginTop: 16 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E3A5F' }}>Update — {msg.date} {msg.time}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#00C853', background: '#E8F5E9', padding: '3px 10px', borderRadius: 6 }}>Baru Terkirim</span>
+                            </div>
+                            <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.7, margin: '0 0 14px' }}>{msg.text}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', color: '#9CA3AF' }}>
+                                <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                Dilihat oleh {msg.views} investor
+                            </div>
+                        </div>
+                    ))}
+
                     {/* Previous Update Card */}
                     <div style={{ background: '#F8FAFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px 24px', marginTop: 16 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -216,6 +242,9 @@ export default function UmkmKomunitas() {
                 </section>
 
             </div>
+
+            {/* Toast Notification */}
+            <Toast {...toast} />
         </div>
     );
 }

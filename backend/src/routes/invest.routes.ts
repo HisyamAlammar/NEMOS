@@ -130,7 +130,6 @@ investRouter.post(
           amount: BigInt(amountNum),
           status: "PENDING",
           investId: investment.id,
-          rawPayload: JSON.parse(JSON.stringify({ qris: paymentData })),
         },
       });
 

@@ -51,7 +51,6 @@ interface PaymentJobData {
   externalId: string;      // Investment ID
   amount: number;
   type: "INVESTMENT" | "REPAYMENT";
-  rawPayload: Record<string, unknown>;
 }
 
 export async function enqueuePaymentJob(data: PaymentJobData): Promise<string> {

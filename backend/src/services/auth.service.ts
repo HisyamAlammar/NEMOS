@@ -45,7 +45,7 @@ export async function registerUser(input: RegisterInput) {
     },
     select: {
       id: true, email: true, name: true, role: true,
-      tier: true, riskProfile: true, learningProgress: true, createdAt: true,
+      tier: true, learningProgress: true, createdAt: true,
     },
   });
 
@@ -64,7 +64,7 @@ export async function loginUser(input: LoginInput) {
   return {
     user: {
       id: user.id, email: user.email, name: user.name, role: user.role,
-      tier: user.tier, riskProfile: user.riskProfile,
+      tier: user.tier,
       learningProgress: user.learningProgress, createdAt: user.createdAt,
     },
     token,
@@ -76,7 +76,7 @@ export async function getCurrentUser(userId: string) {
     where: { id: userId },
     select: {
       id: true, email: true, name: true, role: true,
-      tier: true, riskProfile: true, learningProgress: true, createdAt: true,
+      tier: true, learningProgress: true, createdAt: true,
     },
   });
   if (!user) throw new AppError("User tidak ditemukan", 404);

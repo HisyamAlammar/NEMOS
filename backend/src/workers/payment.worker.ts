@@ -22,11 +22,10 @@ interface PaymentJobData {
   externalId: string;
   amount: number;
   type: "INVESTMENT" | "REPAYMENT";
-  rawPayload: Record<string, unknown>;
 }
 
 async function processPayment(job: Job<PaymentJobData>): Promise<void> {
-  const { xenditId, externalId, amount, type, rawPayload } = job.data;
+  const { xenditId, externalId, amount, type } = job.data;
 
   console.log(`[WORKER] Processing payment: ${xenditId}`);
 
@@ -51,11 +50,9 @@ async function processPayment(job: Job<PaymentJobData>): Promise<void> {
         type: type === "INVESTMENT" ? "INVESTMENT" : "REPAYMENT",
         amount: BigInt(amount),
         status: "CONFIRMED",
-        rawPayload: JSON.parse(JSON.stringify(rawPayload)),
       },
       update: {
         status: "CONFIRMED",
-        rawPayload: JSON.parse(JSON.stringify(rawPayload)),
       },
     });
 

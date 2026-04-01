@@ -90,7 +90,6 @@ webhookRouter.post("/xendit", async (req: Request, res: Response) => {
         externalId: externalId || "",
         amount: Number(amount),
         type: "INVESTMENT",
-        rawPayload: payload,
       });
 
       console.log(`[WEBHOOK] ✅ Job enqueued: ${jobId}`);

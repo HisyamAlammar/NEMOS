@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
+import { fetchUmkmDetail } from '../lib/umkm.api';
 
-// ── UMKM Data Map ─────────────────────────────────────────────
-const UMKM_DATA = {
+// ── Polygon Amoy Explorer Base URL ────────────────────────────
+const POLYGONSCAN_BASE = 'https://amoy.polygonscan.com';
+const NEMOS_CONTRACT = '0x1aa24060c4Cc855b8437DBA3b592647C43c87012';
+
+// ── DEMO_UMKM_DATA (fallback when DB is empty) ───────────────
+const DEMO_UMKM_DATA = {
     0: {
         name: 'Kedai Kopi Senja', location: 'Yogyakarta', grade: 'A', risk: 'Low Risk',
         owner: 'Bapak Ilham', ownerYears: 5,
@@ -122,9 +127,32 @@ const pct = (cur, tgt) => Math.round((cur / tgt) * 100);
 export default function UmkmDetail() {
     const { id } = useParams();
     const [investValue, setInvestValue] = useState(1000000);
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    const [d, setD] = useState(DEMO_UMKM_DATA[id] || DEMO_UMKM_DATA[0]);
 
-    const d = UMKM_DATA[id] || UMKM_DATA[0]; // fallback to id 0
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        // Try to fetch real data from API, merge with demo enrichment
+        fetchUmkmDetail(id).then((response) => {
+            if (response && response.data) {
+                const api = response.data;
+                const demoFallback = DEMO_UMKM_DATA[id] || DEMO_UMKM_DATA[0];
+                // Merge: API fields override, demo fields fill gaps
+                setD({
+                    ...demoFallback,
+                    name: api.name || demoFallback.name,
+                    location: api.location || demoFallback.location,
+                    grade: api.grade || demoFallback.grade,
+                    target: api.target || demoFallback.target,
+                    current: api.current || demoFallback.current,
+                    rbf: api.rbfRate || demoFallback.rbf,
+                    owner: api.ownerName || demoFallback.owner,
+                    ownerYears: api.ownerYears || demoFallback.ownerYears,
+                    latestTxHash: api.latestTxHash || null,
+                });
+            }
+        });
+    }, [id]);
+
     const funded = pct(d.current, d.target);
     const est = { total: investValue + investValue * 0.16, profit: investValue * 0.16 };
 
@@ -194,11 +222,11 @@ export default function UmkmDetail() {
                         </div>
                         Verified by Blockchain
                     </div>
-                    {/* Blockchain TX proof */}
+                    {/* Blockchain TX proof — links to real Polygonscan Amoy */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', color: '#00C853', fontWeight: 500 }}>
-                        <span style={{ color: '#6B7280' }}>TX: 0xA1b2...C3d4 — 03 Mar 2026</span>
-                        <a href="https://etherscan.io" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#00C853', textDecoration: 'underline', fontWeight: 600, fontSize: '12px' }}>
-                            Lihat di blockchain explorer
+                        <span style={{ color: '#6B7280' }}>Contract: {NEMOS_CONTRACT.slice(0, 6)}...{NEMOS_CONTRACT.slice(-4)}</span>
+                        <a href={`${POLYGONSCAN_BASE}/address/${NEMOS_CONTRACT}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#00C853', textDecoration: 'underline', fontWeight: 600, fontSize: '12px' }}>
+                            Lihat di Polygonscan
                             <svg viewBox="0 0 24 24" style={{ width: 12, height: 12, fill: 'none', stroke: 'currentColor', strokeWidth: 2.5 }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                         </a>
                     </div>

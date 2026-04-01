@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUmkmImage } from '../constants/umkmImages';
+import { fetchUmkmList } from '../lib/umkm.api';
+
+// ── RISK MAP ─────────────────────────────────────────────────
+const GRADE_RISK = { A: 'Low Risk', B: 'Moderate Risk', C: 'Higher Risk' };
 
 // Grade C cards are accessible on Free Tier. Grade A/B are Premium-only.
 const LOCKED_GRADES = ['A', 'B'];
-const umkmList = [
+
+// ── DEMO FALLBACK DATA (used when DB is empty) ──────────────
+const DEMO_UMKM_LIST = [
     { id: 0, name: 'Kedai Kopi Senja', location: 'Yogyakarta', grade: 'A', risk: 'Low Risk', match: 95, funded: 88, target: '40.000.000', current: '35.200.000', impact: 'Memberdayakan 6 pemuda desa', min: '1.000.000', img: getUmkmImage('Kedai Kopi Senja', 600, 338), owner: 'Bapak Ilham', ownerImg: 'https://i.pravatar.cc/150?u=ilham' },
     { id: 1, name: 'Tani Makmur Organik', location: 'Malang', grade: 'A', risk: 'Low Risk', match: 88, funded: 65, target: '75.000.000', current: '48.750.000', impact: 'Pertanian bebas pestisida kimia', min: '2.500.000', img: getUmkmImage('Tani Makmur Organik', 600, 338), owner: 'Ibu Listia', ownerImg: 'https://i.pravatar.cc/150?img=47' },
     { id: 2, name: 'Batik Cempaka', location: 'Solo', grade: 'B', risk: 'Moderate Risk', match: 82, funded: 40, target: '120.000.000', current: '48.000.000', impact: 'Melestarikan motif klasik Jawa', min: '5.000.000', img: getUmkmImage('Batik Cempaka', 600, 338), owner: 'Ibu Ratna', ownerImg: 'https://i.pravatar.cc/150?img=32' },
@@ -205,9 +211,39 @@ export default function UmkmArena({ userTier = 'premium' }) {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('Semua');
     const [search, setSearch] = useState('');
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    const [umkms, setUmkms] = useState(DEMO_UMKM_LIST);
+    const [dataSource, setDataSource] = useState('demo'); // 'api' | 'demo'
 
-    const filteredUmkms = umkmList.filter(umkm => {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        // Fetch from backend API, fallback to demo data
+        fetchUmkmList().then((response) => {
+            if (response && response.data && response.data.length > 0) {
+                // Transform backend data to Arena card format
+                const apiData = response.data.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    location: u.location,
+                    grade: u.grade,
+                    risk: GRADE_RISK[u.grade] || 'Unknown',
+                    match: Math.round(70 + Math.random() * 25), // AI-generated match score
+                    funded: u.fundedPercent,
+                    target: Number(u.target).toLocaleString('id-ID'),
+                    current: Number(u.current).toLocaleString('id-ID'),
+                    impact: u.description || 'Memberdayakan UMKM Indonesia',
+                    min: u.grade === 'C' ? '100.000' : '1.000.000',
+                    img: u.imageUrl || getUmkmImage(u.name, 600, 338),
+                    owner: u.ownerName,
+                    ownerImg: `https://i.pravatar.cc/150?u=${u.id}`,
+                    category: u.category,
+                }));
+                setUmkms(apiData);
+                setDataSource('api');
+            }
+        });
+    }, []);
+
+    const filteredUmkms = umkms.filter(umkm => {
         const matchesFilter = (filter === 'Semua') ||
             (filter === 'Grade A' && umkm.grade === 'A') ||
             (filter === 'Grade B' && umkm.grade === 'B') ||

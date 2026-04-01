@@ -219,12 +219,13 @@ ul {
   flex: 1;
   margin-left: var(--sidebar-width);
   min-height: 100vh;
-  padding-bottom: 80px;
+  padding-bottom: 100px; /* [L-03] Extra padding for floating RoleSwitcher */
 }
 
 .view {
   animation: fadeIn 0.35s ease;
   width: 100%;
+  padding-bottom: 80px; /* [L-03] Prevent floating toggle from overlapping content */
 }
 
 @keyframes fadeIn {

@@ -19,7 +19,7 @@ export const investRouter = Router();
 
 // ── GET /api/invest/portfolio ──────────────────────────────
 investRouter.get(
-  "/portfolio",
+  "/invest/portfolio",
   authMiddleware,
   async (req: Request, res: Response) => {
     try {

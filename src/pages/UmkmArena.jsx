@@ -210,7 +210,7 @@ function UmkmCard({ umkm, navigate, userTier }) {
         : card;
 }
 
-export default function UmkmArena({ userTier = 'premium' }) {
+export default function UmkmArena() {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('Semua');
     const [search, setSearch] = useState('');
@@ -218,6 +218,8 @@ export default function UmkmArena({ userTier = 'premium' }) {
     const { toast, showToast } = useToast();
     const user = useAuthStore((s) => s.user);
     const userName = user?.name || 'Investor';
+    // BUG-H10 FIX: Derive tier from auth store, not from prop
+    const effectiveTier = user?.tier?.toLowerCase() ?? 'free';
     const [umkms, setUmkms] = useState(DEMO_UMKM_LIST);
     const [dataSource, setDataSource] = useState('demo'); // 'api' | 'demo'
 
@@ -281,7 +283,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
                     </div>
 
                     {/* Tier banner — only shown to free users */}
-                    {userTier !== 'premium' && (
+                    {effectiveTier !== 'premium' && (
                         <div style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
                             background: '#FFF8E1', border: '1px solid #FF9800',
@@ -305,7 +307,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
                         </div>
                     )}
                     {/* Premium status indicator */}
-                    {userTier === 'premium' && (
+                    {effectiveTier === 'premium' && (
                         <div style={{
                             display: 'flex', alignItems: 'center', gap: 10,
                             background: '#F0FDF4', border: '1px solid #A7F3D0',
@@ -371,7 +373,7 @@ export default function UmkmArena({ userTier = 'premium' }) {
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-2xl) var(--space-xl)', paddingBottom: 80 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
                     {filteredUmkms.map(umkm => (
-                        <UmkmCard key={umkm.id} umkm={umkm} navigate={navigate} userTier={userTier} />
+                        <UmkmCard key={umkm.id} umkm={umkm} navigate={navigate} userTier={effectiveTier} />
                     ))}
                 </div>
             </div>

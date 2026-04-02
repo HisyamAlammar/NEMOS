@@ -25,7 +25,7 @@ import Register from './pages/Register';
 // ==========================================
 // INVESTOR TOP NAVIGATION
 // ==========================================
-function InvestorTopNav({ userTier, setUserTier }) {
+function InvestorTopNav({ userTier }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const userName = user?.name || 'Investor';
@@ -60,8 +60,7 @@ function InvestorTopNav({ userTier, setUserTier }) {
             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>{userName}</div>
             <div style={{ marginTop: 3, position: 'relative' }} className="premium-badge-wrap">
               <span
-                onClick={() => setUserTier(userTier === 'premium' ? 'free' : 'premium')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: userTier === 'premium' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : '#E5E7EB', color: userTier === 'premium' ? '#fff' : '#6B7280', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: userTier === 'premium' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : '#E5E7EB', color: userTier === 'premium' ? '#fff' : '#6B7280', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 4, transition: 'all 0.2s' }}>
                 {userTier === 'premium' && <svg viewBox="0 0 24 24" style={{ width: 9, height: 9, fill: 'currentColor' }}><path d="M2 20 L6 10 L12 14 L18 4 L22 20 Z" /></svg>}
                 {userTier === 'premium' ? 'PREMIUM' : 'REGULAR'}
               </span>
@@ -291,14 +290,16 @@ function MobileHeader({ setSidebarOpen }) {
   );
 }
 
-// Floating Switcher — hidden on auth pages
-function RoleSwitcher({ userRole, setUserRole }) {
+// Floating Switcher — displays current role from auth store,
+// navigates to role-appropriate section. Role change requires re-login.
+function RoleSwitcher({ userRole }) {
   const loc = useLocation();
+  const navigate = useNavigate();
   if (loc.pathname === '/login' || loc.pathname === '/register') return null;
   return (
     <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000, background: '#fff', padding: 8, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', gap: 8, border: '1px solid var(--color-border)' }}>
-      <button onClick={() => setUserRole('investor')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'investor' ? '#1E3A5F' : 'transparent', color: userRole === 'investor' ? '#fff' : '#1E3A5F', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Investor</button>
-      <button onClick={() => setUserRole('umkm_owner')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'umkm_owner' ? '#00C853' : 'transparent', color: userRole === 'umkm_owner' ? '#fff' : '#00C853', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Pengusaha UMKM</button>
+      <button onClick={() => navigate('/dashboard')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'investor' ? '#1E3A5F' : 'transparent', color: userRole === 'investor' ? '#fff' : '#1E3A5F', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Investor</button>
+      <button onClick={() => navigate('/umkm-dashboard')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'umkm_owner' ? '#00C853' : 'transparent', color: userRole === 'umkm_owner' ? '#fff' : '#00C853', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Pengusaha UMKM</button>
     </div>
   );
 }
@@ -308,28 +309,32 @@ function RoleSwitcher({ userRole, setUserRole }) {
 // ==========================================
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState('investor'); // 'investor' | 'umkm_owner'
-  const [userTier, setUserTier] = useState('premium'); // 'premium' | 'free'
+
+  // ── BUG-H2 & BUG-H3 FIX: Derive tier & role from auth store ──
+  // Zustand is the SINGLE source of truth. No more local state.
+  const { user } = useAuthStore();
+  const userTier = user?.tier?.toLowerCase() ?? 'free';
+  const userRole = user?.role?.toLowerCase() ?? 'investor';
 
   return (
     <BrowserRouter>
-      <RoleSwitcher userRole={userRole} setUserRole={setUserRole} />
+      <RoleSwitcher userRole={userRole} />
       <div className={`app-shell ${userRole === 'investor' ? 'theme-investor' : 'theme-umkm'}`}>
 
         {userRole === 'investor' ? (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg)' }}>
-            <InvestorTopNav userTier={userTier} setUserTier={setUserTier} />
+            <InvestorTopNav userTier={userTier} />
             <main style={{ flex: 1 }}>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/learn" element={<LearnHub />} />
-                <Route path="/arena" element={<UmkmArena userTier={userTier} />} />
-                <Route path="/detail/:id" element={<UmkmDetail userTier={userTier} />} />
+                <Route path="/arena" element={<UmkmArena />} />
+                <Route path="/detail/:id" element={<UmkmDetail />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/protection" element={<Protection />} />
                 <Route path="/impact" element={<Impact />} />
-                <Route path="/login" element={<Login userRole={userRole} setUserRole={setUserRole} />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
@@ -346,7 +351,7 @@ function App() {
                 <Route path="/umkm-omzet" element={<UmkmOmzet />} />
                 <Route path="/umkm-kewajiban" element={<UmkmKewajiban />} />
                 <Route path="/umkm-komunitas" element={<UmkmKomunitas />} />
-                <Route path="/login" element={<Login userRole={userRole} setUserRole={setUserRole} />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/umkm-dashboard" replace />} />

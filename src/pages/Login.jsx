@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 import nemosLogo from '../assets/NEMOS LOGO.png';
 
-export default function Login({ userRole = 'investor', setUserRole }) {
+export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    // Local-only role selector for login form UX (visual guide, not app state)
+    const [selectedRole, setSelectedRole] = useState('investor');
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
 
@@ -114,16 +116,16 @@ export default function Login({ userRole = 'investor', setUserRole }) {
 
                             {/* Role: Investor */}
                             <div
-                                onClick={() => { if (setUserRole) setUserRole('investor'); }}
+                                onClick={() => setSelectedRole('investor')}
                                 style={{
-                                    border: userRole === 'investor' ? '2px solid #1E3A5F' : '1px solid var(--color-border)',
-                                    background: userRole === 'investor' ? '#EEF4FF' : '#fff',
+                                    border: selectedRole === 'investor' ? '2px solid #1E3A5F' : '1px solid var(--color-border)',
+                                    background: selectedRole === 'investor' ? '#EEF4FF' : '#fff',
                                     borderRadius: '10px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s',
                                     display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px'
                                 }}
                             >
-                                <div style={{ padding: '8px', background: userRole === 'investor' ? '#fff' : 'var(--color-bg)', borderRadius: '8px' }}>
-                                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: userRole === 'investor' ? '#1E3A5F' : 'var(--color-text-sec)', strokeWidth: 2 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                <div style={{ padding: '8px', background: selectedRole === 'investor' ? '#fff' : 'var(--color-bg)', borderRadius: '8px' }}>
+                                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: selectedRole === 'investor' ? '#1E3A5F' : 'var(--color-text-sec)', strokeWidth: 2 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-pri)' }}>Investor</div>
@@ -133,16 +135,16 @@ export default function Login({ userRole = 'investor', setUserRole }) {
 
                             {/* Role: UMKM */}
                             <div
-                                onClick={() => { if (setUserRole) setUserRole('umkm_owner'); }}
+                                onClick={() => setSelectedRole('umkm_owner')}
                                 style={{
-                                    border: userRole === 'umkm_owner' ? '2px solid #00C853' : '1px solid var(--color-border)',
-                                    background: userRole === 'umkm_owner' ? '#F0FDF4' : '#fff',
+                                    border: selectedRole === 'umkm_owner' ? '2px solid #00C853' : '1px solid var(--color-border)',
+                                    background: selectedRole === 'umkm_owner' ? '#F0FDF4' : '#fff',
                                     borderRadius: '10px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s',
                                     display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px'
                                 }}
                             >
-                                <div style={{ padding: '8px', background: userRole === 'umkm_owner' ? '#fff' : 'var(--color-bg)', borderRadius: '8px' }}>
-                                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: userRole === 'umkm_owner' ? '#00C853' : 'var(--color-text-sec)', strokeWidth: 2 }}><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+                                <div style={{ padding: '8px', background: selectedRole === 'umkm_owner' ? '#fff' : 'var(--color-bg)', borderRadius: '8px' }}>
+                                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: selectedRole === 'umkm_owner' ? '#00C853' : 'var(--color-text-sec)', strokeWidth: 2 }}><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-pri)' }}>Pengusaha UMKM</div>
@@ -178,9 +180,9 @@ export default function Login({ userRole = 'investor', setUserRole }) {
                             </div>
                         )}
 
-                        <button type="submit" disabled={isLoading} style={{ width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: 700, color: '#fff', background: userRole === 'umkm_owner' ? '#00C853' : '#1E3A5F', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s', marginTop: 4 }} onMouseOver={e => { if (!isLoading) e.currentTarget.style.opacity = '0.9'; }} onMouseOut={e => { if (!isLoading) e.currentTarget.style.opacity = '1'; }}>{isLoading ? 'Memproses...' : 'Masuk'}</button>
+                        <button type="submit" disabled={isLoading} style={{ width: '100%', height: 44, border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: 700, color: '#fff', background: selectedRole === 'umkm_owner' ? '#00C853' : '#1E3A5F', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s', marginTop: 4 }} onMouseOver={e => { if (!isLoading) e.currentTarget.style.opacity = '0.9'; }} onMouseOut={e => { if (!isLoading) e.currentTarget.style.opacity = '1'; }}>{isLoading ? 'Memproses...' : 'Masuk'}</button>
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
-                            <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500 }}>{userRole === 'umkm_owner' ? 'Masuk ke Panel Usaha Anda' : 'Masuk ke Pusat Kendali Investasi'}</span>
+                            <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 500 }}>{selectedRole === 'umkm_owner' ? 'Masuk ke Panel Usaha Anda' : 'Masuk ke Pusat Kendali Investasi'}</span>
                         </div>
                     </form>
 

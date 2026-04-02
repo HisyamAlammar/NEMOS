@@ -134,8 +134,120 @@ authRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// ── PATCH /api/auth/me/progress ───────────────────────────
+// Persists learningProgress to database + issues fresh JWT.
+// Rule 2: Idempotent — progress can only go forward, never backward.
+authRouter.patch("/me/progress", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { progress } = req.body;
+    const { prisma } = await import("../services/prisma.service");
+
+    // ── Input validation ──
+    if (typeof progress !== "number" || !Number.isFinite(progress)) {
+      res.status(400).json({
+        error: "INVALID_PROGRESS",
+        message: "Progress harus berupa angka",
+      });
+      return;
+    }
+
+    if (progress < 0 || progress > 100) {
+      res.status(400).json({
+        error: "INVALID_PROGRESS",
+        message: "Progress harus antara 0 dan 100",
+      });
+      return;
+    }
+
+    // Round to integer to prevent floating point shenanigans
+    const progressInt = Math.round(progress);
+
+    // ── Idempotency check: fetch current value from DB ──
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, email: true, name: true, role: true,
+        tier: true, learningProgress: true, createdAt: true,
+      },
+    });
+
+    if (!currentUser) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "User tidak ditemukan",
+      });
+      return;
+    }
+
+    // Forward-only: if new progress <= current, return current state (no error)
+    if (progressInt <= currentUser.learningProgress) {
+      const jwt = await import("jsonwebtoken");
+      const { env } = await import("../config/env");
+      const token = jwt.default.sign(
+        {
+          userId: currentUser.id,
+          email: currentUser.email,
+          role: currentUser.role,
+          tier: currentUser.tier,
+          learningProgress: currentUser.learningProgress,
+        },
+        env.JWT_SECRET,
+        { expiresIn: env.JWT_EXPIRES_IN as any }
+      );
+
+      res.json({
+        message: "Progress tidak berubah",
+        data: { user: currentUser, token },
+      });
+      return;
+    }
+
+    // ── Update progress in database ──
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { learningProgress: progressInt },
+      select: {
+        id: true, email: true, name: true, role: true,
+        tier: true, learningProgress: true, createdAt: true,
+      },
+    });
+
+    // ── Generate fresh JWT with updated learningProgress ──
+    const jwt = await import("jsonwebtoken");
+    const { env } = await import("../config/env");
+    const newToken = jwt.default.sign(
+      {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        tier: updatedUser.tier,
+        learningProgress: updatedUser.learningProgress,
+      },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN as any }
+    );
+
+    console.log(
+      `[AUTH] Learning progress updated: ${currentUser.learningProgress} → ${updatedUser.learningProgress} for user ${userId}`
+    );
+
+    res.json({
+      message: "Progress berhasil diperbarui",
+      data: { user: updatedUser, token: newToken },
+    });
+  } catch (error: any) {
+    console.error("[AUTH] Update progress error:", error.message);
+    res.status(500).json({
+      error: "INTERNAL_ERROR",
+      message: "Gagal memperbarui progress",
+    });
+  }
+});
+
 // ── POST /api/auth/upgrade-tier ───────────────────────────
-// [SEC-P0-02] Upgrade tier now validates payment via Xendit
+// [SEC-P0-02] Upgrade tier: creates pending payment, tier upgrades ONLY after webhook confirmation.
+// BUG-H6 FIX: No longer upgrades tier before payment is confirmed.
 authRouter.post("/upgrade-tier", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -161,8 +273,8 @@ authRouter.post("/upgrade-tier", authMiddleware, async (req: Request, res: Respo
       return;
     }
 
-    // 2. Create Xendit payment for premium upgrade (Rp 99.000)
-    const PREMIUM_PRICE = 99_000;
+    // 2. Create Xendit payment for premium upgrade (Rp 49.000)
+    const PREMIUM_PRICE = 49_000;
     const externalId = `nemos-upgrade-${userId}-${Date.now()}`;
 
     let paymentData;
@@ -181,40 +293,29 @@ authRouter.post("/upgrade-tier", authMiddleware, async (req: Request, res: Respo
       return;
     }
 
-    // 3. Create pending transaction record for tracking
+    // 3. Create PENDING transaction — tier will ONLY be upgraded
+    //    when webhook confirms payment (handled by payment worker).
+    //    Type: PREMIUM_UPGRADE to distinguish from regular INVESTMENT.
     await prisma.transaction.create({
       data: {
         xenditId: externalId,
-        type: "INVESTMENT",
+        type: "PREMIUM_UPGRADE",
         amount: BigInt(PREMIUM_PRICE),
         status: "PENDING",
       },
     });
 
-    // 4. Optimistically upgrade tier (will be confirmed by webhook)
-    // In production, this should ONLY happen after webhook confirmation.
-    // For hackathon demo, we upgrade immediately to show instant UX.
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { tier: "PREMIUM" },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        tier: true,
-        learningProgress: true,
-      },
-    });
+    console.log(`[AUTH] Premium upgrade QRIS created for user ${userId}: ${externalId}`);
 
+    // 4. Return QRIS to frontend — NO tier change yet
     res.json({
-      message: "Upgrade ke Premium berhasil! Silakan selesaikan pembayaran.",
+      message: "Silakan selesaikan pembayaran untuk upgrade ke Premium.",
       data: {
-        user: updatedUser,
         payment: {
           qrString: paymentData.qrString,
           amount: paymentData.amount,
           expiresAt: paymentData.expiresAt,
+          externalId, // Frontend needs this for status polling
         },
       },
     });

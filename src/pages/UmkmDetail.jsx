@@ -10,74 +10,16 @@ import PaymentModal from '../components/PaymentModal';
 const POLYGONSCAN_BASE = 'https://amoy.polygonscan.com';
 const NEMOS_CONTRACT = '0x1aa24060c4Cc855b8437DBA3b592647C43c87012';
 
-// ── DEMO_UMKM_DATA (fallback when DB is empty) ───────────────
-const DEMO_UMKM_DATA = {
-    0: {
-        name: 'Kedai Kopi Senja', location: 'Yogyakarta', grade: 'A', risk: 'Low Risk',
-        owner: 'Bapak Ilham', ownerYears: 5,
-        ownerImg: 'https://i.pravatar.cc/150?u=ilham',
-        heroImg: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1200',
-        story: '"Berkat pendanaan investor NEMOS, saya dapat membeli mesin roasting baru dan tidak lagi bergantung pada jasa sangrai pihak ketiga. Ini meningkatkan margin profit kami 15% sekaligus menjaga kualitas rasa kopi lebih konsisten."',
-        target: 40000000, current: 35200000, rbf: 5, returnEst: '14% — 17%',
-        alloc: [{ label: 'Mesin Roasting', pct: 60 }, { label: 'Biji Kopi', pct: 25 }, { label: 'Operasional', pct: 15 }],
-        bars: [40, 45, 38, 55, 60, 58], vals: [1600000, 1800000, 1520000, 2200000, 2400000, 2320000],
-    },
-    1: {
-        name: 'Tani Makmur Organik', location: 'Malang', grade: 'A', risk: 'Low Risk',
-        owner: 'Ibu Listia', ownerYears: 3,
-        ownerImg: 'https://i.pravatar.cc/150?img=47',
-        heroImg: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=1200',
-        story: '"Dengan dukungan NEMOS, kami bisa membeli pupuk organik berkualitas dan memperluas lahan tanam 40%. Hasil panen meningkat drastis dan pasar organik kami semakin luas."',
-        target: 75000000, current: 48750000, rbf: 5, returnEst: '12% — 16%',
-        alloc: [{ label: 'Pupuk Organik', pct: 45 }, { label: 'Perluasan Lahan', pct: 35 }, { label: 'Distribusi', pct: 20 }],
-        bars: [30, 35, 42, 48, 55, 50], vals: [1200000, 1400000, 1680000, 1920000, 2200000, 2000000],
-    },
-    2: {
-        name: 'Batik Cempaka', location: 'Solo', grade: 'B', risk: 'Moderate Risk',
-        owner: 'Ibu Ratna', ownerYears: 8,
-        ownerImg: 'https://i.pravatar.cc/150?img=32',
-        heroImg: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&q=80&w=1200',
-        story: '"NEMOS membantu kami membeli peralatan cap batik modern sehingga produksi meningkat 3x lipat tanpa mengorbankan kualitas motif tradisional."',
-        target: 120000000, current: 48000000, rbf: 4, returnEst: '10% — 14%',
-        alloc: [{ label: 'Peralatan Produksi', pct: 50 }, { label: 'Bahan Baku', pct: 30 }, { label: 'Pemasaran', pct: 20 }],
-        bars: [25, 30, 28, 35, 40, 38], vals: [1000000, 1200000, 1120000, 1400000, 1600000, 1520000],
-    },
-    3: {
-        name: 'Warung Maju Bersama', location: 'Surabaya', grade: 'C', risk: 'Higher Risk',
-        owner: 'Bapak Hasan', ownerYears: 2,
-        ownerImg: 'https://i.pravatar.cc/150?img=60',
-        heroImg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1200',
-        story: '"Pendanaan dari investor NEMOS memungkinkan saya merenovasi warung dan menambah menu. Pendapatan harian naik 60% dalam tiga bulan pertama."',
-        target: 15000000, current: 4500000, rbf: 6, returnEst: '15% — 20%',
-        alloc: [{ label: 'Renovasi', pct: 55 }, { label: 'Bahan Makanan', pct: 30 }, { label: 'Peralatan', pct: 15 }],
-        bars: [20, 25, 22, 30, 35, 32], vals: [600000, 750000, 660000, 900000, 1050000, 960000],
-    },
-    4: {
-        name: 'Tenun Karya Nusantara', location: 'NTT', grade: 'C', risk: 'Higher Risk',
-        owner: 'Ibu Yanti', ownerYears: 4,
-        ownerImg: 'https://i.pravatar.cc/150?img=44',
-        heroImg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=1200',
-        story: '"Berkat NEMOS, kelompok penenun kami yang terdiri dari 15 perempuan desa kini bisa berproduksi rutin dan menjual ke pasar nasional."',
-        target: 10000000, current: 1800000, rbf: 6, returnEst: '14% — 19%',
-        alloc: [{ label: 'Benang & Pewarna', pct: 40 }, { label: 'Alat Tenun', pct: 35 }, { label: 'Logistik', pct: 25 }],
-        bars: [15, 18, 20, 22, 25, 28], vals: [300000, 360000, 400000, 440000, 500000, 560000],
-    },
-    'dapur-nusantara': {
-        name: 'Dapur Nusantara', location: 'Bandung, Jawa Barat', grade: 'A', risk: 'Low Risk',
-        owner: 'Bu Sari', ownerYears: 3,
-        ownerImg: 'https://i.pravatar.cc/150?img=9',
-        heroImg: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200',
-        story: '"Dengan pendanaan ini kami bisa memperluas kapasitas produksi dan menjangkau lebih banyak pelanggan di seluruh Bandung."',
-        target: 50000000, current: 37500000, rbf: 5, returnEst: '13% — 16%',
-        alloc: [
-            { label: 'Peralatan Dapur', pct: 50 },
-            { label: 'Bahan Baku', pct: 30 },
-            { label: 'Operasional', pct: 20 }
-        ],
-        bars: [72, 80, 75, 93, 86, 100],
-        vals: [3200000, 3500000, 3300000, 4100000, 3800000, 4400000],
-    },
-};
+// ── Risk label derived from grade ─────────────────────────────
+const RISK_MAP = { A: 'Low Risk', B: 'Moderate Risk', C: 'Higher Risk' };
+const RETURN_MAP = { A: '14% — 17%', B: '10% — 14%', C: '15% — 20%' };
+const DEFAULT_ALLOC = [
+    { label: 'Modal Usaha', pct: 50 },
+    { label: 'Operasional', pct: 30 },
+    { label: 'Pengembangan', pct: 20 },
+];
+const DEFAULT_BARS = [40, 45, 38, 55, 60, 58];
+const DEFAULT_VALS = [1600000, 1800000, 1520000, 2200000, 2400000, 2320000];
 
 const MONTHS = ['Sep', 'Okt', 'Nov', 'Des', 'Jan', 'Feb'];
 const Y_LABELS = ['Rp 3Jt', 'Rp 2Jt', 'Rp 1Jt', 'Rp 0'];
@@ -87,10 +29,6 @@ const GRADE_BADGE = { A: 'badge-grade-a', B: 'badge-grade-b', C: 'badge-grade-c'
 // ── Bar Chart ─────────────────────────────────────────────
 function BarChart({ bars, vals }) {
     const [hovered, setHovered] = useState(null);
-    const maxVal = Math.max(...vals);
-    // Normalize bar heights to max 90%
-    const heights = bars.map(b => b);
-
     return (
         <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 240, paddingBottom: 8, flexShrink: 0 }}>
@@ -101,7 +39,7 @@ function BarChart({ bars, vals }) {
                     {Y_LABELS.map(l => <div key={l} style={{ width: '100%', height: 1, background: '#F3F4F6' }} />)}
                 </div>
                 <div style={{ width: '100%', height: 240, display: 'flex', alignItems: 'flex-end', gap: 4, borderBottom: '1px solid var(--color-border)', paddingBottom: 8, position: 'relative', zIndex: 1 }}>
-                    {heights.map((h, i) => (
+                    {bars.map((h, i) => (
                         <div key={i}
                             style={{ flex: 1, position: 'relative', height: '100%', display: 'flex', alignItems: 'flex-end' }}
                             onMouseEnter={() => setHovered(i)}
@@ -109,10 +47,10 @@ function BarChart({ bars, vals }) {
                         >
                             {hovered === i && (
                                 <div style={{ position: 'absolute', bottom: `${h}%`, left: '50%', transform: 'translateX(-50%) translateY(-8px)', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 11px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', whiteSpace: 'nowrap', zIndex: 20, fontSize: 12, fontWeight: 600, color: '#1E3A5F', pointerEvents: 'none' }}>
-                                    {MONTHS[i]} 2026 — Rp {vals[i].toLocaleString('id-ID')}
+                                    {MONTHS[i]} 2026 — Rp {vals[i]?.toLocaleString('id-ID') ?? '0'}
                                 </div>
                             )}
-                            <div style={{ width: '100%', background: hovered === i ? '#2563EB' : 'var(--color-primary)', height: `${h}%`, borderRadius: '4px 4px 0 0', transition: 'all 0.2s', opacity: i === heights.length - 1 ? 1 : 0.7, cursor: 'pointer' }} />
+                            <div style={{ width: '100%', background: hovered === i ? '#2563EB' : 'var(--color-primary)', height: `${h}%`, borderRadius: '4px 4px 0 0', transition: 'all 0.2s', opacity: i === bars.length - 1 ? 1 : 0.7, cursor: 'pointer' }} />
                         </div>
                     ))}
                 </div>
@@ -124,20 +62,150 @@ function BarChart({ bars, vals }) {
     );
 }
 
+// ── Skeleton Loader ───────────────────────────────────────
+function DetailSkeleton() {
+    const pulse = { background: '#E2E8F0', borderRadius: 8, animation: 'pulse 1.5s ease-in-out infinite' };
+    return (
+        <div className="view" style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+            <div style={{ padding: 'var(--space-md) var(--space-xl)', background: '#fff' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                    <div style={{ ...pulse, width: 180, height: 16 }} />
+                </div>
+            </div>
+            <div style={{ width: '100%', height: 400, ...pulse, borderRadius: 0 }} />
+            <div style={{ maxWidth: 1200, margin: '32px auto', padding: '0 var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ ...pulse, height: 80, width: '100%' }} />
+                <div style={{ display: 'flex', gap: 24 }}>
+                    <div style={{ flex: '1 1 55%', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <div style={{ ...pulse, height: 240 }} />
+                        <div style={{ ...pulse, height: 160 }} />
+                    </div>
+                    <div style={{ flex: '1 1 35%', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <div style={{ ...pulse, height: 280 }} />
+                        <div style={{ ...pulse, height: 180 }} />
+                    </div>
+                </div>
+            </div>
+            <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
+        </div>
+    );
+}
+
+// ── Error State ───────────────────────────────────────────
+function DetailError({ message, onRetry }) {
+    return (
+        <div className="view" style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center', maxWidth: 420, padding: 32 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 32, height: 32, fill: 'none', stroke: '#DC2626', strokeWidth: 1.5 }}>
+                        <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
+                </div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>Data UMKM Tidak Dapat Dimuat</h2>
+                <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 24 }}>{message || 'Terjadi kesalahan saat memuat data. Silakan coba lagi.'}</p>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                    <NavLink to="/arena" style={{ padding: '10px 24px', borderRadius: 8, border: '1px solid var(--color-border)', background: '#fff', color: '#334155', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                        Kembali ke Arena
+                    </NavLink>
+                    <button onClick={onRetry} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#1E3A5F', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                        Coba Lagi
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Helpers ────────────────────────────────────────────────
-const formatRp = (v) => 'Rp ' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-const pct = (cur, tgt) => Math.round((cur / tgt) * 100);
+const formatRp = (v) => 'Rp ' + (v ?? 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const pct = (cur, tgt) => tgt > 0 ? Math.round((cur / tgt) * 100) : 0;
 
 export default function UmkmDetail() {
     const { id } = useParams();
     const [investValue, setInvestValue] = useState(1000000);
-    const [d, setD] = useState(DEMO_UMKM_DATA[id] || DEMO_UMKM_DATA[0]);
     const [isInvesting, setIsInvesting] = useState(false);
     const [paymentData, setPaymentData] = useState(null);
+    const [currentInvestmentId, setCurrentInvestmentId] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const { toast, showToast } = useToast();
     const user = useAuthStore((s) => s.user);
     const isAuthenticated = useAuthStore((s) => !!s.token);
+
+    // ── BUG-H4 FIX: Proper loading states, no demo fallback ──
+    const [umkmData, setUmkmData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [retryKey, setRetryKey] = useState(0); // trigger re-fetch
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        let cancelled = false;
+
+        async function loadUmkm() {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await fetchUmkmDetail(id);
+
+            if (cancelled) return;
+
+            if (response && response.data) {
+                const api = response.data;
+                // Build display object from API data with safe defaults
+                setUmkmData({
+                    id: api.id,
+                    name: api.name ?? 'Nama tidak tersedia',
+                    location: api.location ?? 'Lokasi tidak tersedia',
+                    grade: api.grade ?? 'C',
+                    risk: RISK_MAP[api.grade] ?? 'Unknown Risk',
+                    owner: api.ownerName ?? 'Pemilik UMKM',
+                    ownerYears: api.ownerYears ?? 1,
+                    ownerImg: `https://i.pravatar.cc/150?u=${api.id}`,
+                    heroImg: api.imageUrl || null,
+                    story: api.description
+                        ? `"${api.description}"`
+                        : '"Kami percaya pendanaan dari investor akan membantu usaha kami berkembang lebih pesat."',
+                    target: api.target ?? 0,
+                    current: api.current ?? 0,
+                    rbf: api.rbfRate ?? 5,
+                    returnEst: RETURN_MAP[api.grade] ?? '10% — 15%',
+                    alloc: DEFAULT_ALLOC,
+                    bars: DEFAULT_BARS,
+                    vals: DEFAULT_VALS,
+                    latestTxHash: api.latestTxHash ?? null,
+                    investorCount: api.investorCount ?? 0,
+                    fundedPercent: api.fundedPercent ?? 0,
+                });
+                setIsLoading(false);
+            } else {
+                setError('UMKM tidak ditemukan atau server tidak merespons.');
+                setIsLoading(false);
+            }
+        }
+
+        loadUmkm();
+        return () => { cancelled = true; };
+    }, [id, retryKey]);
+
+    // ── Render: Loading state ──
+    if (isLoading) return <DetailSkeleton />;
+
+    // ── Render: Error state ──
+    if (error || !umkmData) {
+        return <DetailError message={error} onRetry={() => setRetryKey(k => k + 1)} />;
+    }
+
+    // ── Success: Render with API data ──
+    const d = umkmData;
+    const funded = pct(d.current, d.target);
+    const est = { total: investValue + investValue * 0.16, profit: investValue * 0.16 };
+
+    // Conic gradient for alloc chart
+    let conicParts = [], cum = 0;
+    d.alloc.forEach((a, i) => {
+        conicParts.push(`${ALLOC_COLORS[i]} ${cum}% ${cum + a.pct}%`);
+        cum += a.pct;
+    });
 
     // ── Handle Konfirmasi Pendanaan → Xendit QRIS ──────
     const handleInvest = async () => {
@@ -154,6 +222,7 @@ export default function UmkmDetail() {
         try {
             const response = await createInvestment(d.id || id, investValue);
             setPaymentData(response.data.payment);
+            setCurrentInvestmentId(response.data.investmentId);
             setShowPaymentModal(true);
             showToast('QRIS berhasil dibuat! Silakan scan.', 'success');
         } catch (err) {
@@ -163,40 +232,6 @@ export default function UmkmDetail() {
             setIsInvesting(false);
         }
     };
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        // Try to fetch real data from API, merge with demo enrichment
-        fetchUmkmDetail(id).then((response) => {
-            if (response && response.data) {
-                const api = response.data;
-                const demoFallback = DEMO_UMKM_DATA[id] || DEMO_UMKM_DATA[0];
-                // Merge: API fields override, demo fields fill gaps
-                setD({
-                    ...demoFallback,
-                    name: api.name || demoFallback.name,
-                    location: api.location || demoFallback.location,
-                    grade: api.grade || demoFallback.grade,
-                    target: api.target || demoFallback.target,
-                    current: api.current || demoFallback.current,
-                    rbf: api.rbfRate || demoFallback.rbf,
-                    owner: api.ownerName || demoFallback.owner,
-                    ownerYears: api.ownerYears || demoFallback.ownerYears,
-                    latestTxHash: api.latestTxHash || null,
-                });
-            }
-        });
-    }, [id]);
-
-    const funded = pct(d.current, d.target);
-    const est = { total: investValue + investValue * 0.16, profit: investValue * 0.16 };
-
-    // Conic gradient for alloc chart
-    let conicParts = [], cum = 0;
-    d.alloc.forEach((a, i) => {
-        conicParts.push(`${ALLOC_COLORS[i]} ${cum}% ${cum + a.pct}%`);
-        cum += a.pct;
-    });
 
     return (
         <div className="view" style={{ minHeight: '100vh', background: 'var(--color-bg)', paddingBottom: 100 }}>
@@ -212,8 +247,12 @@ export default function UmkmDetail() {
 
             {/* 1. Hero Section */}
             <div style={{ position: 'relative', width: '100%', height: 400, background: '#000' }}>
-                <img src={d.heroImg} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
-                    onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.background = 'linear-gradient(135deg, #1a472a, #2d6a4f)'; }} />
+                {d.heroImg ? (
+                    <img src={d.heroImg} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                        onError={e => { e.target.style.display = 'none'; e.target.parentElement.style.background = 'linear-gradient(135deg, #1a472a, #2d6a4f)'; }} />
+                ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a472a, #2d6a4f)' }} />
+                )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(13,27,42,0.9) 0%, transparent 60%)' }}></div>
 
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'var(--space-2xl) var(--space-xl)' }}>
@@ -223,7 +262,8 @@ export default function UmkmDetail() {
                     >
                         <div>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 12px 6px 6px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.3)', marginBottom: 'var(--space-md)' }}>
-                                <img src={d.ownerImg} alt={d.owner} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                                <img src={d.ownerImg} alt={d.owner} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                                    onError={e => { e.target.style.display = 'none'; }} />
                                 <span style={{ color: '#fff', fontSize: '12px', fontWeight: 500 }}>Pemilik: {d.owner}, {d.ownerYears} tahun</span>
                             </div>
                             <h1 className="hero-title-responsive" style={{ color: '#fff', fontSize: '36px', fontWeight: 800, lineHeight: 1.1, marginBottom: 8, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{d.name}</h1>
@@ -424,7 +464,9 @@ export default function UmkmDetail() {
                 visible={showPaymentModal}
                 paymentData={paymentData}
                 umkmName={d.name}
+                investmentId={currentInvestmentId}
                 onClose={() => setShowPaymentModal(false)}
+                onPaymentSuccess={() => showToast('🎉 Pembayaran berhasil! Portofolio diperbarui.', 'success')}
             />
         </div>
     );

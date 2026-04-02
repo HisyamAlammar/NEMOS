@@ -2,15 +2,41 @@
  * components/PaymentModal.jsx — Xendit QRIS Payment Modal
  *
  * Sprint 6 [P0-NEW-02]: Displays QRIS code from Xendit after invest API call.
- * Shows QR string, amount, countdown timer, and status.
+ * BUG-H8 FIX: Now polls /api/invest/:id/status every 3s to detect payment.
+ * Shows QR string, amount, countdown timer, and real-time status.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { checkInvestmentStatus } from '../lib/invest.api';
+import { useAuthStore } from '../stores/auth.store';
 
 const formatRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
 
-export default function PaymentModal({ visible, paymentData, umkmName, onClose }) {
+export default function PaymentModal({ visible, paymentData, umkmName, investmentId, onClose, onPaymentSuccess }) {
     const [timeLeft, setTimeLeft] = useState(0);
+    const [paymentStatus, setPaymentStatus] = useState('PENDING');
+    const pollingRef = useRef(null);
+    const countdownRef = useRef(null);
+    const refreshUser = useAuthStore((s) => s.refreshUser);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+        };
+    }, []);
+
+    // Reset state when modal visibility changes
+    useEffect(() => {
+        if (!visible) {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            setPaymentStatus('PENDING');
+            setTimeLeft(0);
+        }
+    }, [visible]);
+
+    // Countdown timer
     useEffect(() => {
         if (!visible || !paymentData?.expiresAt) return;
 
@@ -20,26 +46,56 @@ export default function PaymentModal({ visible, paymentData, umkmName, onClose }
         };
 
         setTimeLeft(calcTimeLeft());
-        const interval = setInterval(() => {
+        countdownRef.current = setInterval(() => {
             const left = calcTimeLeft();
             setTimeLeft(left);
-            if (left <= 0) clearInterval(interval);
+            if (left <= 0) {
+                clearInterval(countdownRef.current);
+                if (paymentStatus === 'PENDING') setPaymentStatus('EXPIRED');
+                if (pollingRef.current) clearInterval(pollingRef.current);
+            }
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
     }, [visible, paymentData]);
+
+    // BUG-H8 FIX: Poll payment status every 3s
+    useEffect(() => {
+        if (!visible || !investmentId || paymentStatus !== 'PENDING') return;
+
+        pollingRef.current = setInterval(async () => {
+            try {
+                const data = await checkInvestmentStatus(investmentId);
+
+                if (data.status === 'ACTIVE') {
+                    clearInterval(pollingRef.current);
+                    setPaymentStatus('SUCCESS');
+                    onPaymentSuccess?.();
+                    await refreshUser();
+                }
+                if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+                    clearInterval(pollingRef.current);
+                    setPaymentStatus('FAILED');
+                }
+            } catch (err) {
+                // Polling failure — don't crash, user can still close manually
+                console.warn('[PaymentModal] Status poll failed:', err.message);
+            }
+        }, 3000);
+
+        return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+    }, [visible, investmentId, paymentStatus]);
 
     if (!visible || !paymentData) return null;
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    const isExpired = timeLeft <= 0;
 
     return (
         <>
             {/* Backdrop */}
             <div
-                onClick={onClose}
+                onClick={paymentStatus === 'PENDING' ? undefined : onClose}
                 style={{
                     position: 'fixed', inset: 0,
                     background: 'rgba(0,0,0,0.5)',
@@ -65,95 +121,132 @@ export default function PaymentModal({ visible, paymentData, umkmName, onClose }
             }}>
                 {/* Header */}
                 <div style={{
-                    background: 'linear-gradient(135deg, #1E3A5F, #2C5282)',
+                    background: paymentStatus === 'SUCCESS'
+                        ? 'linear-gradient(135deg, #059669, #10B981)'
+                        : paymentStatus === 'FAILED' || paymentStatus === 'EXPIRED'
+                        ? 'linear-gradient(135deg, #DC2626, #EF4444)'
+                        : 'linear-gradient(135deg, #1E3A5F, #2C5282)',
                     padding: '24px 28px 20px',
                     color: '#fff',
                     textAlign: 'center',
                 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.8, marginBottom: 4 }}>Pembayaran Investasi</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.8, marginBottom: 4 }}>
+                        {paymentStatus === 'SUCCESS' ? 'Pembayaran Berhasil' :
+                         paymentStatus === 'FAILED' ? 'Pembayaran Gagal' :
+                         paymentStatus === 'EXPIRED' ? 'QR Kadaluarsa' :
+                         'Pembayaran Investasi'}
+                    </div>
                     <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{formatRp(paymentData.amount)}</div>
                     <div style={{ fontSize: 13, marginTop: 6, opacity: 0.7 }}>{umkmName}</div>
                 </div>
 
-                {/* QRIS Area */}
+                {/* Body */}
                 <div style={{ padding: '28px', textAlign: 'center' }}>
-                    {/* QR Code Display */}
-                    <div style={{
-                        background: '#F8FAFC',
-                        border: '2px dashed #E2E8F0',
-                        borderRadius: 16,
-                        padding: '24px',
-                        marginBottom: 20,
-                    }}>
-                        <div style={{
-                            width: 200, height: 200,
-                            margin: '0 auto',
-                            background: '#fff',
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '1px solid #E2E8F0',
-                            position: 'relative',
-                            overflow: 'hidden',
-                        }}>
-                            {/* QR Code placeholder — in production this renders the qrString as actual QR */}
-                            <div style={{ textAlign: 'center', padding: 16 }}>
-                                <svg viewBox="0 0 24 24" style={{ width: 48, height: 48, fill: 'none', stroke: '#1E3A5F', strokeWidth: 1.5, margin: '0 auto 12px', display: 'block' }}>
-                                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-                                    <rect x="14" y="14" width="3" height="3" /><rect x="18" y="14" width="3" height="3" /><rect x="14" y="18" width="3" height="3" /><rect x="18" y="18" width="3" height="3" />
-                                </svg>
-                                <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>QRIS NEMOS</div>
-                                <div style={{ fontSize: 9, color: '#94A3B8', marginTop: 4, wordBreak: 'break-all', maxWidth: 160 }}>
-                                    {paymentData.qrString ? paymentData.qrString.substring(0, 40) + '...' : 'Demo Mode'}
+
+                    {/* ── PENDING: Show QR ── */}
+                    {paymentStatus === 'PENDING' && (
+                        <>
+                            <div style={{
+                                background: '#F8FAFC',
+                                border: '2px dashed #E2E8F0',
+                                borderRadius: 16,
+                                padding: '24px',
+                                marginBottom: 20,
+                            }}>
+                                <div style={{
+                                    width: 200, height: 200,
+                                    margin: '0 auto',
+                                    background: '#fff',
+                                    borderRadius: 12,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '1px solid #E2E8F0',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                }}>
+                                    <div style={{ textAlign: 'center', padding: 16 }}>
+                                        <svg viewBox="0 0 24 24" style={{ width: 48, height: 48, fill: 'none', stroke: '#1E3A5F', strokeWidth: 1.5, margin: '0 auto 12px', display: 'block' }}>
+                                            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                                            <rect x="14" y="14" width="3" height="3" /><rect x="18" y="14" width="3" height="3" /><rect x="14" y="18" width="3" height="3" /><rect x="18" y="18" width="3" height="3" />
+                                        </svg>
+                                        <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>QRIS NEMOS</div>
+                                        <div style={{ fontSize: 9, color: '#94A3B8', marginTop: 4, wordBreak: 'break-all', maxWidth: 160 }}>
+                                            {paymentData.qrString ? paymentData.qrString.substring(0, 40) + '...' : 'Demo Mode'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: 16, fontSize: 13, color: '#64748B', fontWeight: 500 }}>
+                                    Scan QRIS di atas dengan aplikasi e-wallet atau m-banking Anda
                                 </div>
                             </div>
+
+                            {/* Countdown Timer */}
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                padding: '12px 20px',
+                                background: '#FFF8E1',
+                                borderRadius: 10,
+                                marginBottom: 12,
+                            }}>
+                                <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: '#F59E0B', strokeWidth: 2 }}>
+                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>
+                                    Berlaku {minutes}:{seconds.toString().padStart(2, '0')} menit
+                                </span>
+                            </div>
+
+                            {/* Polling indicator */}
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '10px 16px',
+                                background: '#EFF6FF',
+                                borderRadius: 8,
+                                marginBottom: 20,
+                            }}>
+                                <div style={{
+                                    width: 8, height: 8, borderRadius: '50%',
+                                    background: '#3B82F6',
+                                    animation: 'pulse 1.5s ease-in-out infinite',
+                                }} />
+                                <span style={{ fontSize: 12, color: '#1E3A5F', fontWeight: 500 }}>
+                                    Menunggu konfirmasi pembayaran...
+                                </span>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── SUCCESS ── */}
+                    {paymentStatus === 'SUCCESS' && (
+                        <div style={{ padding: '16px 0' }}>
+                            <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: '#065F46', marginBottom: 8 }}>
+                                Pembayaran Berhasil!
+                            </div>
+                            <div style={{ fontSize: 13, color: '#047857', lineHeight: 1.6 }}>
+                                Investasi Anda di {umkmName} telah dikonfirmasi. Portofolio Anda telah diperbarui.
+                            </div>
                         </div>
+                    )}
 
-                        <div style={{ marginTop: 16, fontSize: 13, color: '#64748B', fontWeight: 500 }}>
-                            Scan QRIS di atas dengan aplikasi e-wallet atau m-banking Anda
+                    {/* ── FAILED / EXPIRED ── */}
+                    {(paymentStatus === 'FAILED' || paymentStatus === 'EXPIRED') && (
+                        <div style={{ padding: '16px 0' }}>
+                            <div style={{ fontSize: 56, marginBottom: 12 }}>
+                                {paymentStatus === 'EXPIRED' ? '⏰' : '❌'}
+                            </div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: '#DC2626', marginBottom: 8 }}>
+                                {paymentStatus === 'EXPIRED' ? 'QR Code Kadaluarsa' : 'Pembayaran Gagal'}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
+                                {paymentStatus === 'EXPIRED'
+                                    ? 'Batas waktu pembayaran telah habis. Silakan buat investasi baru.'
+                                    : 'Pembayaran tidak dapat diproses. Silakan coba lagi.'}
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Countdown Timer */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        padding: '12px 20px',
-                        background: isExpired ? '#FEF2F2' : '#FFF8E1',
-                        borderRadius: 10,
-                        marginBottom: 20,
-                    }}>
-                        <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: isExpired ? '#DC2626' : '#F59E0B', strokeWidth: 2 }}>
-                            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                        </svg>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: isExpired ? '#DC2626' : '#92400E' }}>
-                            {isExpired
-                                ? 'QR Code telah kadaluarsa'
-                                : `Berlaku ${minutes}:${seconds.toString().padStart(2, '0')} menit`
-                            }
-                        </span>
-                    </div>
-
-                    {/* Status Info */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '10px 16px',
-                        background: '#EFF6FF',
-                        borderRadius: 8,
-                        marginBottom: 20,
-                    }}>
-                        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: 'none', stroke: '#1E3A5F', strokeWidth: 2, flexShrink: 0 }}>
-                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                        <span style={{ fontSize: 12, color: '#1E3A5F', fontWeight: 500 }}>
-                            Status pembayaran akan diperbarui otomatis via webhook Xendit
-                        </span>
-                    </div>
+                    )}
 
                     {/* Close Button */}
                     <button
@@ -161,19 +254,20 @@ export default function PaymentModal({ visible, paymentData, umkmName, onClose }
                         style={{
                             width: '100%',
                             height: 48,
-                            background: '#F3F4F6',
-                            color: '#374151',
+                            background: paymentStatus === 'SUCCESS' ? '#059669' : '#F3F4F6',
+                            color: paymentStatus === 'SUCCESS' ? '#fff' : '#374151',
                             border: 'none',
                             borderRadius: 12,
                             fontSize: 14,
                             fontWeight: 700,
                             cursor: 'pointer',
                             transition: 'background 0.2s',
+                            marginTop: paymentStatus === 'PENDING' ? 0 : 16,
                         }}
-                        onMouseOver={e => e.currentTarget.style.background = '#E5E7EB'}
-                        onMouseOut={e => e.currentTarget.style.background = '#F3F4F6'}
                     >
-                        Tutup — Saya Sudah Scan
+                        {paymentStatus === 'SUCCESS' ? 'Tutup' :
+                         paymentStatus === 'PENDING' ? 'Tutup — Saya Sudah Scan' :
+                         'Tutup'}
                     </button>
                 </div>
             </div>
@@ -186,6 +280,10 @@ export default function PaymentModal({ visible, paymentData, umkmName, onClose }
                 @keyframes modalScaleIn {
                     from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
                     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.4; }
                 }
             `}</style>
         </>

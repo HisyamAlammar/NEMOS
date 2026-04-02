@@ -23,13 +23,25 @@ export async function createInvestment(umkmId, amount) {
 
 /**
  * Upgrade user tier to PREMIUM.
- * For hackathon/demo: instantly updates tier in DB.
+ * BUG-H6 FIX: Returns QRIS payment for user to scan.
+ * Tier is upgraded only after webhook confirms payment.
  *
- * @returns {Promise<{ data: { tier: string } }>}
+ * @returns {Promise<{ data: { payment: { qrString, amount, expiresAt, externalId } } }>}
  */
 export async function upgradeToPremium() {
     return apiFetch('/auth/upgrade-tier', {
         method: 'POST',
         body: JSON.stringify({ tier: 'PREMIUM' }),
     });
+}
+
+/**
+ * Check investment payment status (polling).
+ * BUG-H8: Used by PaymentModal to detect when payment is confirmed.
+ *
+ * @param {string} investmentId - Investment database ID
+ * @returns {Promise<{ investmentId, status, amount, paidAt }>}
+ */
+export async function checkInvestmentStatus(investmentId) {
+    return apiFetch(`/invest/${investmentId}/status`);
 }

@@ -21,7 +21,7 @@ interface PaymentJobData {
   xenditId: string;
   externalId: string;
   amount: number;
-  type: "INVESTMENT" | "REPAYMENT";
+  type: "INVESTMENT" | "REPAYMENT" | "PREMIUM_UPGRADE";
 }
 
 async function processPayment(job: Job<PaymentJobData>): Promise<void> {
@@ -47,7 +47,7 @@ async function processPayment(job: Job<PaymentJobData>): Promise<void> {
       where: { xenditId },
       create: {
         xenditId,
-        type: type === "INVESTMENT" ? "INVESTMENT" : "REPAYMENT",
+        type: type === "INVESTMENT" ? "INVESTMENT" : type === "PREMIUM_UPGRADE" ? "PREMIUM_UPGRADE" : "REPAYMENT",
         amount: BigInt(amount),
         status: "CONFIRMED",
       },
@@ -55,6 +55,28 @@ async function processPayment(job: Job<PaymentJobData>): Promise<void> {
         status: "CONFIRMED",
       },
     });
+
+    // ── BUG-H6 FIX: Handle PREMIUM_UPGRADE payments ──
+    // externalId pattern: "nemos-upgrade-{userId}-{timestamp}"
+    if (externalId.startsWith("nemos-upgrade-")) {
+      const parts = externalId.split("-");
+      // nemos-upgrade-{userId}-{timestamp} → userId is parts[2]
+      const upgradeUserId = parts.slice(2, -1).join("-"); // handles cuid with dashes
+
+      if (upgradeUserId) {
+        await tx.user.update({
+          where: { id: upgradeUserId },
+          data: { tier: "PREMIUM" },
+        });
+
+        console.log(`[WORKER] ✅ Tier upgraded to PREMIUM for user: ${upgradeUserId}`);
+        console.log(`         TX: ${xenditId}`);
+        console.log(`         Amount: Rp ${amount.toLocaleString("id-ID")}`);
+      } else {
+        console.warn(`[WORKER] ⚠️ Could not extract userId from externalId: ${externalId}`);
+      }
+      return; // Premium upgrade complete — no investment/tranche processing needed
+    }
 
     // 2. Find the linked Investment via externalId (= xenditTxId)
     const investment = await tx.investment.findUnique({

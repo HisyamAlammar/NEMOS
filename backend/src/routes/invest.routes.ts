@@ -170,3 +170,58 @@ investRouter.post(
     }
   }
 );
+
+// ── GET /api/invest/:investmentId/status ──────────────────
+// BUG-H8: Real-time payment status polling endpoint.
+// PaymentModal polls this every 3s to detect payment confirmation.
+investRouter.get(
+  "/invest/:investmentId/status",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const investmentId = req.params.investmentId as string;
+      const userId = req.user!.userId;
+
+      const investment = await prisma.investment.findUnique({
+        where: { id: investmentId },
+        select: {
+          id: true,
+          status: true,
+          amount: true,
+          createdAt: true,
+          userId: true,
+        },
+      });
+
+      if (!investment) {
+        res.status(404).json({
+          error: "NOT_FOUND",
+          message: "Investasi tidak ditemukan",
+        });
+        return;
+      }
+
+      // Security: only the owner can check their investment status
+      if (investment.userId !== userId) {
+        res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Anda tidak memiliki akses ke investasi ini",
+        });
+        return;
+      }
+
+      res.json({
+        investmentId: investment.id,
+        status: investment.status,
+        amount: Number(investment.amount),
+        paidAt: investment.status === "ACTIVE" ? investment.createdAt : null,
+      });
+    } catch (error: any) {
+      console.error("[INVEST] Status check error:", error.message);
+      res.status(500).json({
+        error: "INTERNAL_ERROR",
+        message: "Gagal mengecek status investasi",
+      });
+    }
+  }
+);

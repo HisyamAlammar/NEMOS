@@ -54,27 +54,43 @@ webhookRouter.post("/xendit", async (req: Request, res: Response) => {
     }
 
     // ── STEP 3: Extract Payment Info ────────────────────
-    const xenditId = payload.id || payload.payment_id;
+    const xenditInternalId = payload.id || payload.payment_id;
     const externalId = payload.external_id || payload.reference_id;
     const amount = payload.amount || payload.paid_amount;
     const status = payload.status;
 
-    if (!xenditId) {
-      console.warn("[WEBHOOK] Missing xendit payment ID in payload");
+    if (!xenditInternalId && !externalId) {
+      console.warn("[WEBHOOK] Missing both xendit ID and external_id in payload");
       res.status(400).json({ error: "Missing payment ID" });
       return;
     }
 
-    console.log(`[WEBHOOK] Received: ${xenditId} — status: ${status} — amount: ${amount}`);
+    // BUG-H7 FIX: Structured entry log for demo debugging
+    console.log(`[WEBHOOK] Received:`, {
+      xenditId: xenditInternalId,
+      externalId,
+      status,
+      amount,
+      event: payload.event || 'N/A',
+    });
 
     // ── STEP 4: IDEMPOTENCY CHECK (Rule 2) ──────────────
+    // BUG-H7 FIX: Use externalId for lookup — that's what we store
+    // in transaction.xenditId when creating investments/upgrades.
+    // Fall back to xenditInternalId only if externalId is not available.
+    const lookupId = externalId || xenditInternalId;
+
     const existingTx = await prisma.transaction.findUnique({
-      where: { xenditId },
+      where: { xenditId: lookupId },
     });
 
     if (existingTx && existingTx.status !== "PENDING") {
       // Sudah diproses sebelumnya — jangan proses ulang
-      console.log(`[WEBHOOK] ⏭ Already processed: ${xenditId} (status: ${existingTx.status})`);
+      console.log(`[WEBHOOK] ⏭ Already processed:`, {
+        lookupId,
+        existingStatus: existingTx.status,
+        txId: existingTx.id,
+      });
       res.status(200).json({
         status: "already_processed",
         txId: existingTx.id,
@@ -86,7 +102,7 @@ webhookRouter.post("/xendit", async (req: Request, res: Response) => {
     // Cepat return 200 ke Xendit, processing dilakukan async
     if (status === "COMPLETED" || status === "PAID" || status === "SUCCEEDED") {
       const jobId = await enqueuePaymentJob({
-        xenditId,
+        xenditId: lookupId,
         externalId: externalId || "",
         amount: Number(amount),
         type: "INVESTMENT",

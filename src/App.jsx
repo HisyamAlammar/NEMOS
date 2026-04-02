@@ -290,19 +290,7 @@ function MobileHeader({ setSidebarOpen }) {
   );
 }
 
-// Floating Switcher — displays current role from auth store,
-// navigates to role-appropriate section. Role change requires re-login.
-function RoleSwitcher({ userRole }) {
-  const loc = useLocation();
-  const navigate = useNavigate();
-  if (loc.pathname === '/login' || loc.pathname === '/register') return null;
-  return (
-    <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000, background: '#fff', padding: 8, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', gap: 8, border: '1px solid var(--color-border)' }}>
-      <button onClick={() => navigate('/dashboard')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'investor' ? '#1E3A5F' : 'transparent', color: userRole === 'investor' ? '#fff' : '#1E3A5F', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Investor</button>
-      <button onClick={() => navigate('/umkm-dashboard')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'umkm_owner' ? '#00C853' : 'transparent', color: userRole === 'umkm_owner' ? '#fff' : '#00C853', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Pengusaha UMKM</button>
-    </div>
-  );
-}
+
 
 // ==========================================
 // MAIN APP COMPONENT
@@ -318,7 +306,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <RoleSwitcher userRole={userRole} />
       <div className={`app-shell ${userRole === 'investor' ? 'theme-investor' : 'theme-umkm'}`}>
 
         {userRole === 'investor' ? (

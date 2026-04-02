@@ -9,6 +9,7 @@
  */
 import { Router, Request, Response } from "express";
 import { prisma } from "../services/prisma.service";
+import { authMiddleware } from "../middleware/auth";
 
 export const umkmRouter = Router();
 
@@ -58,6 +59,53 @@ umkmRouter.get("/", async (_req: Request, res: Response) => {
       error: "INTERNAL_ERROR",
       message: "Gagal mengambil daftar UMKM",
     });
+  }
+});
+
+// ── GET UMKM FOR LOGGED IN OWNER ─────────────────────────
+umkmRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const umkm = await prisma.uMKM.findUnique({
+      where: { ownerId: userId },
+      include: {
+        investments: {
+          where: { status: "ACTIVE" },
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { name: true } },
+            transactions: {
+              where: { status: "CONFIRMED" },
+              select: { createdAt: true, amount: true },
+              orderBy: { createdAt: "desc" }
+            }
+          }
+        }
+      }
+    });
+
+    if (!umkm) {
+      res.status(404).json({ error: "NOT_FOUND", message: "Anda belum memiliki data UMKM" });
+      return;
+    }
+
+    const serialized = {
+      ...umkm,
+      target: Number(umkm.target),
+      current: Number(umkm.current),
+      investments: umkm.investments.map(i => ({
+        id: i.id,
+        investorName: i.user.name,
+        amount: Number(i.amount),
+        createdAt: i.createdAt,
+        status: i.status
+      }))
+    };
+
+    res.json({ data: serialized });
+  } catch (error: any) {
+    console.error("[UMKM] Get Me error:", error.message);
+    res.status(500).json({ error: "INTERNAL_ERROR", message: "Gagal mengambil data UMKM Anda" });
   }
 });
 

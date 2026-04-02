@@ -30,7 +30,7 @@ export default function Login() {
             if (user?.role === 'UMKM_OWNER') {
                 navigate('/umkm-dashboard');
             } else {
-                navigate('/dashboard');
+                navigate('/arena');
             }
         } catch (err) {
             setError(err.message || 'Login gagal. Periksa email dan password Anda.');

@@ -98,8 +98,8 @@ export async function aiFetch(path, options = {}) {
  * @returns {Promise<{ message: string, data: { user: object, token: string } }>}
  */
 export async function updateLearningProgress(progress) {
-  return apiFetch('/auth/me/progress', {
-    method: 'PATCH',
+  return apiFetch('/auth/progress', {
+    method: 'POST',
     body: JSON.stringify({ progress }),
   });
 }

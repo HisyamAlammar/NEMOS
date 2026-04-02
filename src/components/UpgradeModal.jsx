@@ -6,6 +6,7 @@
  * tier upgrades only after webhook confirms payment.
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { upgradeToPremium } from '../lib/invest.api';
 import { useAuthStore } from '../stores/auth.store';
 import { apiFetch } from '../lib/api';
@@ -22,6 +23,8 @@ const FEATURES = [
 const formatRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
 
 export default function UpgradeModal({ visible, onClose, onSuccess, showToast }) {
+    const navigate = useNavigate();
+    const user = useAuthStore((s) => s.user);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentData, setPaymentData] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('IDLE'); // IDLE | PENDING | CONFIRMED | FAILED
@@ -98,15 +101,26 @@ export default function UpgradeModal({ visible, onClose, onSuccess, showToast })
     }, [paymentStatus, paymentData]);
 
     const handleUpgrade = async () => {
+        if (!user) {
+            showToast?.('Anda harus login terlebih dahulu.', 'error');
+            onClose?.();
+            navigate('/login');
+            return;
+        }
+
         setIsProcessing(true);
-        showToast?.('Membuat pembayaran...', 'loading');
+        showToast?.('Memproses upgrade ke Premium...', 'loading');
         try {
-            const response = await upgradeToPremium();
-            setPaymentData(response.data.payment);
-            setPaymentStatus('PENDING');
-            showToast?.('QRIS berhasil dibuat! Silakan scan untuk upgrade.', 'success');
+            await upgradeToPremium();
+            await refreshUser();
+            
+            showToast?.('🎉 Upgrade ke Premium berhasil!', 'success');
+            onSuccess?.({ tier: 'PREMIUM' });
+            
+            setPaymentStatus('CONFIRMED');
+            setTimeout(() => onClose?.(), 2000);
         } catch (err) {
-            const msg = err.data?.message || err.message || 'Gagal membuat pembayaran upgrade';
+            const msg = err.data?.message || err.message || 'Gagal memproses upgrade';
             showToast?.(msg, 'error');
         } finally {
             setIsProcessing(false);

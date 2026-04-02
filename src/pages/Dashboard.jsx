@@ -1,12 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getUmkmImage } from '../constants/umkmImages';
 import { useAuthStore } from '../stores/auth.store';
+import { apiFetch } from '../lib/api';
 
 export default function Dashboard() {
     const user = useAuthStore((s) => s.user);
     const userName = user?.name || 'Investor';
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+
+    const [portfolioData, setPortfolioData] = useState({ data: [], totalObject: 0 });
+
+    useEffect(() => { 
+        window.scrollTo(0, 0); 
+        const fetchPortfolio = async () => {
+            try {
+                const res = await apiFetch('/invest/portfolio');
+                setPortfolioData(res);
+            } catch (err) {
+                console.error("Gagal mengambil portofolio:", err);
+            }
+        };
+        fetchPortfolio();
+    }, []);
+
     return (
         <div className="view" style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingBottom: 'var(--space-3xl)' }}>
 
@@ -28,7 +44,7 @@ export default function Dashboard() {
                     >
                         <div className="label-uppercase text-muted" style={{ marginBottom: 8 }}>Total Portofolio</div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
-                            <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--color-text-pri)', lineHeight: 1 }}>Rp 15.750.000</div>
+                            <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--color-text-pri)', lineHeight: 1 }}>Rp {portfolioData.totalObject.toLocaleString('id-ID')}</div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-accent)' }}>+3,2% bulan ini</div>
                         </div>
 
@@ -118,84 +134,35 @@ export default function Dashboard() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', color: 'var(--color-text-sec)' }}>03 Mar 2026</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <img src={getUmkmImage('Kedai Kopi Senja', 100, 100)} alt="Kedai Kopi Senja" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                                    <div>
-                                                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Kedai Kopi Senja</div>
-                                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>RBF 5%/bln</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', fontWeight: 700, color: 'var(--color-accent)' }}>Rp 125.000</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                                                    0xA1b2...C3d4
-                                                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 2, cursor: 'pointer' }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}><span className="pill pill-confirmed">Confirmed</span></td>
-                                        </tr>
-
-                                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', color: 'var(--color-text-sec)' }}>28 Feb 2026</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <img src={getUmkmImage('Tani Makmur Organik', 100, 100)} alt="Tani Makmur Organik" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                                    <div>
-                                                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Tani Makmur Organik</div>
-                                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>RBF 4%/bln</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', fontWeight: 700, color: 'var(--color-accent)' }}>Rp 87.500</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                                                    0xE5f6...G7h8
-                                                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 2, cursor: 'pointer' }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}><span className="pill pill-confirmed">Confirmed</span></td>
-                                        </tr>
-
-                                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', color: 'var(--color-text-sec)' }}>25 Feb 2026</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <img src={getUmkmImage('Batik Cempaka', 100, 100)} alt="Batik Cempaka" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                                    <div>
-                                                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Batik Cempaka</div>
-                                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>RBF 6%/bln</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', fontWeight: 700, color: 'var(--color-accent)' }}>Rp 62.000</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                                                    0xI9j0...K1l2
-                                                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 2, cursor: 'pointer' }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}><span className="pill pill-confirmed">Confirmed</span></td>
-                                        </tr>
-
-                                        <tr>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', color: 'var(--color-text-sec)' }}>20 Feb 2026</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <img src={getUmkmImage('Dapur Nusantara', 100, 100)} alt="Dapur Nusantara" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                                    <div>
-                                                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Dapur Nusantara</div>
-                                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>RBF 5%/bln</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', fontWeight: 700 }}>—</td>
-                                            <td style={{ padding: '16px var(--space-lg)', fontSize: '13px', color: 'var(--color-text-muted)' }}>Belum terbit</td>
-                                            <td style={{ padding: '16px var(--space-lg)' }}><span className="pill pill-pending">Pending</span></td>
-                                        </tr>
+                                        {portfolioData.data.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="5" style={{ padding: '16px var(--space-lg)', textAlign: 'center', color: 'var(--color-text-muted)' }}>Belum ada portofolio investasi aktif.</td>
+                                            </tr>
+                                        ) : (
+                                            portfolioData.data.map((inv, i) => (
+                                                <tr key={inv.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                                    <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', color: 'var(--color-text-sec)' }}>
+                                                        {new Date(inv.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                    </td>
+                                                    <td style={{ padding: '16px var(--space-lg)' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                            <img src={getUmkmImage(inv.umkmName, 100, 100)} alt={inv.umkmName} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                                                            <div>
+                                                                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>{inv.umkmName}</div>
+                                                                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>RBF {inv.rbfRate}%/bln</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '16px var(--space-lg)', fontSize: '14px', fontWeight: 700, color: 'var(--color-accent)' }}>Rp {inv.amount.toLocaleString('id-ID')}</td>
+                                                    <td style={{ padding: '16px var(--space-lg)' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                                                            0xA1b2...C3d4
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '16px var(--space-lg)' }}><span className="pill pill-confirmed">Active</span></td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

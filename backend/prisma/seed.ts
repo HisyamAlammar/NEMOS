@@ -2,18 +2,11 @@
  * prisma/seed.ts — Database Seed Script
  *
  * Sprint 6 [P1-NEW-05]: Inject dummy data for demo/hackathon.
- *
- * Creates:
- * - 1 Investor user (Budi Santoso) with PREMIUM tier
- * - 1 UMKM Owner user (Bu Sari) 
- * - 1 UMKM record (Dapur Nusantara) linked to Bu Sari
- * - 2 Investment records from Budi → Dapur Nusantara
- * - 1 Confirmed Transaction with polygon TX hash
+ * Creates 5 UMKM records with their owners to populate the Arena.
+ * Creates 1 Investor user with PREMIUM access.
  *
  * Run: npx prisma db seed
  * Or:  npx tsx prisma/seed.ts
- *
- * IMPORTANT: Does NOT modify schema.prisma.
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -21,115 +14,138 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding NEMOS database...\n");
+  console.log("🌱 Seeding NEMOS database for Demo Hackathon...\n");
 
-  // ── 1. INVESTOR USER: Budi Santoso ─────────────────────
-  const hashedPasswordBudi = await bcrypt.hash("password123", 10);
+  const defaultPassword = await bcrypt.hash("password123", 10);
 
-  const budi = await prisma.user.upsert({
-    where: { email: "budi@nemos.id" },
+  // ── 1. INVESTOR USER ───────────────────────────────────
+  const investor = await prisma.user.upsert({
+    where: { email: "investor@nemos.id" },
     update: {},
     create: {
-      email: "budi@nemos.id",
-      password: hashedPasswordBudi,
-      name: "Budi Santoso",
+      email: "investor@nemos.id",
+      password: defaultPassword,
+      name: "Budi (Demo Investor)",
       role: "INVESTOR",
       tier: "PREMIUM",
-      riskProfile: "KONSERVATIF",
+      riskProfile: "MODERAT",
       learningProgress: 100,
     },
   });
-  console.log(`✅ Investor: ${budi.name} (${budi.email}) — Tier: ${budi.tier}`);
+  console.log(`✅ Investor: ${investor.name} (${investor.email})`);
 
-  // ── 2. UMKM OWNER USER: Bu Sari ───────────────────────
-  const hashedPasswordSari = await bcrypt.hash("password123", 10);
-
-  const sari = await prisma.user.upsert({
-    where: { email: "sari@nemos.id" },
-    update: {},
-    create: {
-      email: "sari@nemos.id",
-      password: hashedPasswordSari,
-      name: "Bu Sari",
-      role: "UMKM_OWNER",
-      tier: "FREE",
-      learningProgress: 0,
-    },
-  });
-  console.log(`✅ UMKM Owner: ${sari.name} (${sari.email})`);
-
-  // ── 3. UMKM: Dapur Nusantara ──────────────────────────
-  // Check if UMKM already exists for this owner
-  const existingUmkm = await prisma.uMKM.findUnique({
-    where: { ownerId: sari.id },
-  });
-
-  const umkm = existingUmkm || await prisma.uMKM.create({
-    data: {
-      name: "Dapur Nusantara",
-      location: "Bandung, Jawa Barat",
+  // ── 2. UMKM OWNERS & DATA ──────────────────────────────
+  const umkmsData = [
+    {
+      ownerEmail: "sari@nemos.id",
+      ownerName: "Bu Sari",
+      umkmName: "Kedai Kopi Senja",
+      location: "Jakarta Selatan",
       category: "Kuliner",
       grade: "A",
-      target: BigInt(50_000_000),
-      current: BigInt(37_500_000),
+      target: 25_000_000,
+      current: 12_500_000,
       rbfRate: 0.05,
-      description: "Usaha kuliner rumahan yang memberdayakan ibu rumah tangga lokal. Menyediakan makanan tradisional Nusantara dengan sentuhan modern.",
-      imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=600",
-      ownerId: sari.id,
+      description: "Kedai kopi susu kekinian yang jadi langganan anak muda dan pekerja. Menawarkan kopi dengan biji lokal terbaik Nusantara.",
+      imageUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600"
     },
-  });
-  console.log(`✅ UMKM: ${umkm.name} — Grade ${umkm.grade} — Target: Rp ${Number(umkm.target).toLocaleString("id-ID")}`);
+    {
+      ownerEmail: "andi@nemos.id",
+      ownerName: "Pak Andi",
+      umkmName: "Tani Makmur Organik",
+      location: "Cianjur, Jawa Barat",
+      category: "Agrikultur",
+      grade: "B",
+      target: 75_000_000,
+      current: 25_000_000,
+      rbfRate: 0.08,
+      description: "Pertanian sayur dan buah lokal organik bersertifikat dengan metode irigasi pintar yang siap diekspor.",
+      imageUrl: "https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      ownerEmail: "ratna@nemos.id",
+      ownerName: "Ibu Ratna",
+      umkmName: "Batik Cempaka",
+      location: "Solo, Jawa Tengah",
+      category: "Kerajinan",
+      grade: "A",
+      target: 40_000_000,
+      current: 20_000_000,
+      rbfRate: 0.06,
+      description: "Galeri batik tulis kontemporer yang menggabungkan motif tradisional dengan pendekatan fashion millenial.",
+      imageUrl: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      ownerEmail: "arif@nemos.id",
+      ownerName: "Mas Arif",
+      umkmName: "Bengkel Motor Jaya",
+      location: "Surabaya, Jawa Timur",
+      category: "Jasa",
+      grade: "C",
+      target: 15_000_000,
+      current: 5_000_000,
+      rbfRate: 0.12,
+      description: "Bengkel spesialis restorasi motor klasik yang butuh tambahan alat presisi dan montir.",
+      imageUrl: "https://images.unsplash.com/photo-1507914841961-7ec87b92a3b0?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      ownerEmail: "tiara@nemos.id",
+      ownerName: "Mbak Tiara",
+      umkmName: "Hijab Modest.id",
+      location: "Bandung, Jawa Barat",
+      category: "Fashion",
+      grade: "B",
+      target: 30_000_000,
+      current: 22_500_000,
+      rbfRate: 0.07,
+      description: "Toko dan brand modest wear yang memproduksi pakaian sehari-hari secara lokal dengan bahan rmah lingkungan.",
+      imageUrl: "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&q=80&w=600"
+    }
+  ];
 
-  // ── 4. INVESTMENTS: Budi → Dapur Nusantara ─────────────
-  const existingInvestments = await prisma.investment.findMany({
-    where: { userId: budi.id, umkmId: umkm.id },
-  });
-
-  if (existingInvestments.length === 0) {
-    const inv1 = await prisma.investment.create({
-      data: {
-        amount: BigInt(25_000_000),
-        userId: budi.id,
-        umkmId: umkm.id,
-        xenditTxId: `nemos-seed-inv-001-${Date.now()}`,
-        status: "ACTIVE",
+  for (const data of umkmsData) {
+    const owner = await prisma.user.upsert({
+      where: { email: data.ownerEmail },
+      update: {},
+      create: {
+        email: data.ownerEmail,
+        password: defaultPassword,
+        name: data.ownerName,
+        role: "UMKM_OWNER",
+        tier: "FREE",
       },
     });
 
-    const inv2 = await prisma.investment.create({
-      data: {
-        amount: BigInt(12_500_000),
-        userId: budi.id,
-        umkmId: umkm.id,
-        xenditTxId: `nemos-seed-inv-002-${Date.now()}`,
-        status: "ACTIVE",
-      },
+    // Check if UMKM already exists for this owner
+    const existingUmkm = await prisma.uMKM.findUnique({
+      where: { ownerId: owner.id },
     });
 
-    console.log(`✅ Investment 1: Rp ${Number(inv1.amount).toLocaleString("id-ID")} (ACTIVE)`);
-    console.log(`✅ Investment 2: Rp ${Number(inv2.amount).toLocaleString("id-ID")} (ACTIVE)`);
-
-    // ── 5. TRANSACTION: Confirmed with Polygon TX Hash ────
-    await prisma.transaction.create({
-      data: {
-        xenditId: `nemos-seed-tx-001-${Date.now()}`,
-        type: "INVESTMENT",
-        amount: BigInt(25_000_000),
-        status: "CONFIRMED",
-        investId: inv1.id,
-        polygonTxHash: "0x8a2f3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a",
-        merkleRoot: "0xabc123def456789",
-      },
-    });
-    console.log(`✅ Transaction: CONFIRMED with Polygon TX Hash`);
-  } else {
-    console.log(`ℹ️  Investments already exist (${existingInvestments.length}), skipping...`);
+    if (!existingUmkm) {
+      const umkm = await prisma.uMKM.create({
+        data: {
+          name: data.umkmName,
+          location: data.location,
+          category: data.category,
+          grade: data.grade as "A" | "B" | "C",
+          target: BigInt(data.target),
+          current: BigInt(data.current),
+          rbfRate: data.rbfRate,
+          description: data.description,
+          imageUrl: data.imageUrl,
+          ownerId: owner.id,
+        },
+      });
+      console.log(`✅ UMKM Seeded: ${umkm.name} — Grade ${umkm.grade} — Owner: ${owner.name}`);
+    } else {
+      console.log(`ℹ️  UMKM ${data.umkmName} already exists, skipping...`);
+    }
   }
 
   console.log("\n🎉 NEMOS database seeded successfully!");
-  console.log("   Login credentials:");
-  console.log("   Investor: budi@nemos.id / password123");
-  console.log("   UMKM:     sari@nemos.id / password123");
+  console.log("   Test Accounts:");
+  console.log("   - Investor: investor@nemos.id / password123");
+  console.log("   - UMKM Owner: sari@nemos.id / password123");
 }
 
 main()

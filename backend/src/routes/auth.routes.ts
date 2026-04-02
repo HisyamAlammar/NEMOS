@@ -134,10 +134,10 @@ authRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ── PATCH /api/auth/me/progress ───────────────────────────
+// ── POST /api/auth/progress ───────────────────────────
 // Persists learningProgress to database + issues fresh JWT.
 // Rule 2: Idempotent — progress can only go forward, never backward.
-authRouter.patch("/me/progress", authMiddleware, async (req: Request, res: Response) => {
+authRouter.post("/progress", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { progress } = req.body;
@@ -273,50 +273,22 @@ authRouter.post("/upgrade-tier", authMiddleware, async (req: Request, res: Respo
       return;
     }
 
-    // 2. Create Xendit payment for premium upgrade (Rp 49.000)
-    const PREMIUM_PRICE = 49_000;
-    const externalId = `nemos-upgrade-${userId}-${Date.now()}`;
-
-    let paymentData;
-    try {
-      paymentData = await createQrisPayment({
-        externalId,
-        amount: PREMIUM_PRICE,
-        description: `NEMOS Premium Upgrade — ${currentUser.name}`,
-      });
-    } catch (xenditError: any) {
-      console.error("[AUTH] Xendit upgrade payment failed:", xenditError.message);
-      res.status(502).json({
-        error: "PAYMENT_GATEWAY_ERROR",
-        message: "Gagal membuat pembayaran upgrade. Silakan coba lagi.",
-      });
-      return;
-    }
-
-    // 3. Create PENDING transaction — tier will ONLY be upgraded
-    //    when webhook confirms payment (handled by payment worker).
-    //    Type: PREMIUM_UPGRADE to distinguish from regular INVESTMENT.
-    await prisma.transaction.create({
-      data: {
-        xenditId: externalId,
-        type: "PREMIUM_UPGRADE",
-        amount: BigInt(PREMIUM_PRICE),
-        status: "PENDING",
+    // ── DEMO HACK: Instant Premium Bypass ──
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { tier: "PREMIUM" },
+      select: {
+        id: true, email: true, name: true, role: true,
+        tier: true, learningProgress: true, createdAt: true,
       },
     });
 
-    console.log(`[AUTH] Premium upgrade QRIS created for user ${userId}: ${externalId}`);
+    console.log(`[AUTH-DEMO] User ${userId} upgraded to PREMIUM instantly.`);
 
-    // 4. Return QRIS to frontend — NO tier change yet
     res.json({
-      message: "Silakan selesaikan pembayaran untuk upgrade ke Premium.",
+      message: "Upgrade ke Premium berhasil!",
       data: {
-        payment: {
-          qrString: paymentData.qrString,
-          amount: paymentData.amount,
-          expiresAt: paymentData.expiresAt,
-          externalId, // Frontend needs this for status polling
-        },
+        user: updatedUser,
       },
     });
   } catch (error: any) {

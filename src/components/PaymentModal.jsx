@@ -8,10 +8,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { checkInvestmentStatus } from '../lib/invest.api';
 import { useAuthStore } from '../stores/auth.store';
+import { apiFetch } from '../lib/api';
+
 
 const formatRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
 
-export default function PaymentModal({ visible, paymentData, umkmName, investmentId, onClose, onPaymentSuccess }) {
+export default function PaymentModal({ visible, paymentData, umkmName, investmentId, onClose, onPaymentSuccess, showToast }) {
     const [timeLeft, setTimeLeft] = useState(0);
     const [paymentStatus, setPaymentStatus] = useState('PENDING');
     const pollingRef = useRef(null);
@@ -85,6 +87,22 @@ export default function PaymentModal({ visible, paymentData, umkmName, investmen
 
         return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
     }, [visible, investmentId, paymentStatus]);
+    const handleSimulatePayment = async () => {
+        try {
+            await apiFetch(`/invest/${investmentId}/simulate-payment`, { method: 'POST' });
+            setPaymentStatus('SUCCESS');
+            if (pollingRef.current) clearInterval(pollingRef.current);
+            showToast?.('Skenario demo berhasil: Pembayaran diverifikasi instan!', 'success');
+            await refreshUser();
+            onPaymentSuccess?.();
+            setTimeout(() => {
+                onClose();
+            }, 3000);
+        } catch (error) {
+            showToast?.('Gagal mensimulasikan pembayaran', 'error');
+            console.error('Simulate payment failed', error);
+        }
+    };
 
     if (!visible || !paymentData) return null;
 
@@ -143,79 +161,37 @@ export default function PaymentModal({ visible, paymentData, umkmName, investmen
                 {/* Body */}
                 <div style={{ padding: '28px', textAlign: 'center' }}>
 
-                    {/* ── PENDING: Show QR ── */}
+                    {/* ── DEMO HACK: Simulate Payment ── */}
                     {paymentStatus === 'PENDING' && (
-                        <>
-                            <div style={{
-                                background: '#F8FAFC',
-                                border: '2px dashed #E2E8F0',
-                                borderRadius: 16,
-                                padding: '24px',
-                                marginBottom: 20,
-                            }}>
-                                <div style={{
-                                    width: 200, height: 200,
-                                    margin: '0 auto',
-                                    background: '#fff',
-                                    borderRadius: 12,
+                        <div style={{ marginTop: 24, marginBottom: 12 }}>
+                             <button 
+                                onClick={handleSimulatePayment}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    background: '#F59E0B',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    fontSize: '15px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    border: '1px solid #E2E8F0',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                }}>
-                                    <div style={{ textAlign: 'center', padding: 16 }}>
-                                        <svg viewBox="0 0 24 24" style={{ width: 48, height: 48, fill: 'none', stroke: '#1E3A5F', strokeWidth: 1.5, margin: '0 auto 12px', display: 'block' }}>
-                                            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-                                            <rect x="14" y="14" width="3" height="3" /><rect x="18" y="14" width="3" height="3" /><rect x="14" y="18" width="3" height="3" /><rect x="18" y="18" width="3" height="3" />
-                                        </svg>
-                                        <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>QRIS NEMOS</div>
-                                        <div style={{ fontSize: 9, color: '#94A3B8', marginTop: 4, wordBreak: 'break-all', maxWidth: 160 }}>
-                                            {paymentData.qrString ? paymentData.qrString.substring(0, 40) + '...' : 'Demo Mode'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginTop: 16, fontSize: 13, color: '#64748B', fontWeight: 500 }}>
-                                    Scan QRIS di atas dengan aplikasi e-wallet atau m-banking Anda
-                                </div>
-                            </div>
-
-                            {/* Countdown Timer */}
-                            <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                padding: '12px 20px',
-                                background: '#FFF8E1',
-                                borderRadius: 10,
-                                marginBottom: 12,
-                            }}>
-                                <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: '#F59E0B', strokeWidth: 2 }}>
-                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                    gap: '8px'
+                                }}
+                             >
+                                <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}>
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                                 </svg>
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>
-                                    Berlaku {minutes}:{seconds.toString().padStart(2, '0')} menit
-                                </span>
-                            </div>
-
-                            {/* Polling indicator */}
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '10px 16px',
-                                background: '#EFF6FF',
-                                borderRadius: 8,
-                                marginBottom: 20,
-                            }}>
-                                <div style={{
-                                    width: 8, height: 8, borderRadius: '50%',
-                                    background: '#3B82F6',
-                                    animation: 'pulse 1.5s ease-in-out infinite',
-                                }} />
-                                <span style={{ fontSize: 12, color: '#1E3A5F', fontWeight: 500 }}>
-                                    Menunggu konfirmasi pembayaran...
-                                </span>
-                            </div>
-                        </>
+                                Simulasikan Pembayaran Berhasil (Demo)
+                             </button>
+                             <p style={{ fontSize: 12, color: '#64748B', marginTop: 12 }}>
+                                 [Demo Mode] Bypass QRIS Xendit
+                             </p>
+                        </div>
                     )}
 
                     {/* ── SUCCESS ── */}

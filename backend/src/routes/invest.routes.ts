@@ -17,6 +17,39 @@ import { AppError } from "../services/auth.service";
 
 export const investRouter = Router();
 
+// ── GET /api/invest/portfolio ──────────────────────────────
+investRouter.get(
+  "/portfolio",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.userId;
+      const investments = await prisma.investment.findMany({
+        where: { userId, status: "ACTIVE" },
+        include: {
+          umkm: { select: { name: true, rbfRate: true } }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+
+      const serialized = investments.map(i => ({
+        id: i.id,
+        amount: Number(i.amount),
+        umkmName: i.umkm.name,
+        rbfRate: i.umkm.rbfRate,
+        createdAt: i.createdAt
+      }));
+
+      const total = serialized.reduce((sum, current) => sum + current.amount, 0);
+
+      res.json({ data: serialized, totalObject: total });
+    } catch (error: any) {
+      console.error("[INVEST] Portfolio error:", error.message);
+      res.status(500).json({ error: "INTERNAL_ERROR", message: "Gagal mengambil portofolio" });
+    }
+  }
+);
+
 // ── POST /api/invest ──────────────────────────────────────
 investRouter.post(
   "/invest",
@@ -221,6 +254,77 @@ investRouter.get(
       res.status(500).json({
         error: "INTERNAL_ERROR",
         message: "Gagal mengecek status investasi",
+      });
+    }
+  }
+);
+
+// ── POST /api/invest/:investmentId/simulate-payment ───────────
+// DEMO HACK: Instantly confirms a pending investment without Xendit.
+investRouter.post(
+  "/invest/:investmentId/simulate-payment",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const investmentId = req.params.investmentId as string;
+      const userId = req.user!.userId;
+
+      // Ensure the investment exists and belongs to user
+      const investment = await prisma.investment.findUnique({
+        where: { id: investmentId },
+        include: { transactions: true }
+      });
+
+      if (!investment || investment.userId !== userId) {
+        res.status(404).json({ error: "NOT_FOUND", message: "Investasi tidak ditemukan" });
+        return;
+      }
+
+      if (investment.status !== "PENDING" || !investment.transactions || investment.transactions.length === 0) {
+        res.status(400).json({ error: "BAD_REQUEST", message: "Investasi sudah diproses atau tidak valid" });
+        return;
+      }
+
+      // Confirm Transaction and Activate Investment
+      await prisma.$transaction(async (tx) => {
+        const trans = investment.transactions[0];
+        await tx.transaction.update({
+          where: { id: trans.id },
+          data: { status: "CONFIRMED" },
+        });
+
+        await tx.investment.update({
+          where: { id: investmentId },
+          data: { status: "ACTIVE" },
+        });
+
+        // Optionally create Tranche 1 here or let existing mechanics handle it
+        await tx.tranche.create({
+            data: {
+                investment: { connect: { id: investment.id } },
+                stage: 1,
+                amount: investment.amount,
+                aiVerified: true,
+                releasedAt: new Date()
+            }
+        });
+
+        // DEMO FIX: Synchronize UMKM current amount
+        await tx.uMKM.update({
+          where: { id: investment.umkmId },
+          data: {
+            current: { increment: investment.amount }
+          }
+        });
+      });
+
+      console.log(`[DEMO-HACK] Investment ${investmentId} auto-confirmed!`);
+      res.json({ message: "Pembayaran berhasil disimulasikan" });
+    } catch (error: any) {
+      console.error("[INVEST] Simulate payment error:", error.message);
+      res.status(500).json({
+        error: "INTERNAL_ERROR",
+        message: "Gagal mensimulasikan pembayaran",
       });
     }
   }

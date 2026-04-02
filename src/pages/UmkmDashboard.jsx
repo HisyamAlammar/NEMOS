@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import nemosLogo from '../assets/NEMOS LOGO.png';
 import { useAuthStore } from '../stores/auth.store';
 import Toast, { useToast } from '../components/Toast';
+import { apiFetch } from '../lib/api';
 
 export default function UmkmDashboard() {
     const navigate = useNavigate();
     const user = useAuthStore((s) => s.user);
     const ownerName = user?.name || 'Pengusaha';
-    useEffect(() => { window.scrollTo(0, 0); }, []);;
+
 
     // ── Wizard of Oz Video Verification State [GEM-03] ──────
     const [showVideoModal, setShowVideoModal] = useState(false);
@@ -22,6 +23,62 @@ export default function UmkmDashboard() {
     const [cashCategory, setCashCategory] = useState('');
     const [cashAmount, setCashAmount] = useState('');
     const [cashTransactions, setCashTransactions] = useState([]);
+
+    // ── Dashboard Data State ──────────────────────────────
+    const [umkmData, setUmkmData] = useState(null);
+    const [isUploadingOCR, setIsUploadingOCR] = useState(false);
+    
+    useEffect(() => { 
+        window.scrollTo(0, 0); 
+        const fetchDashboardData = async () => {
+            try {
+                const res = await apiFetch('/umkm/me');
+                if (res && res.data) {
+                    setUmkmData(res.data);
+                }
+            } catch (err) {
+                console.error("Gagal load umkm dashboard data:", err);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    const handleUploadReceipt = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploadingOCR(true);
+        showToast('Mengupload dan Menganalisis Bukti Transaksi (AI Vision)...', 'info');
+        
+        try {
+            // Mock API Form Data 
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Mock fetch to FastAPI backend proxy
+            // const res = await fetch('/api/ocr/verify-receipt', { method: 'POST', body: formData }).then(r=>r.json());
+            
+            // Simulating API latency and JSON response for demo
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const mockResponse = {
+                total: 2450000,
+                merchant: "NEMOS B2B Cash",
+                confidence: 0.98,
+            };
+
+            setCashAmount(String(mockResponse.total));
+            setCashCategory('khusus'); // Pre-fill category
+            showToast(`AI Berhasil Membaca Nominal: Rp ${mockResponse.total.toLocaleString('id-ID')}`, 'success');
+
+        } catch (err) {
+            console.error(err);
+            showToast('Gagal memproses struk via AI', 'error');
+        } finally {
+            setIsUploadingOCR(false);
+            e.target.value = ''; // reset
+        }
+    };
 
     // ── Camera lifecycle ───────────────────────────────────
     useEffect(() => {
@@ -154,21 +211,21 @@ export default function UmkmDashboard() {
                             <div className="label-uppercase text-muted" style={{ letterSpacing: 1, marginBottom: 'var(--space-xl)' }}>STATUS PENDANAAN AKTIF</div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-xl)' }}>
-                                <div style={{ position: 'relative', width: 160, height: 160, borderRadius: '50%', background: 'conic-gradient(#00C853 0% 75%, var(--color-border) 75% 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ position: 'relative', width: 160, height: 160, borderRadius: '50%', background: `conic-gradient(#00C853 0% ${umkmData ? Math.round((umkmData.current / umkmData.target) * 100) : 75}%, var(--color-border) ${umkmData ? Math.round((umkmData.current / umkmData.target) * 100) : 75}% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <div style={{ width: 136, height: 136, background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-text-pri)', lineHeight: 1 }}>75%</div>
+                                        <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-text-pri)', lineHeight: 1 }}>{umkmData ? Math.round((umkmData.current / umkmData.target) * 100) : 75}%</div>
                                         <div style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginTop: 4 }}>Terkumpul</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-text-pri)' }}>Rp 37.500.000</div>
-                                <div style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>dari Rp 50.000.000</div>
+                                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-text-pri)' }}>Rp {umkmData ? umkmData.current.toLocaleString('id-ID') : '37.500.000'}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>dari Rp {umkmData ? umkmData.target.toLocaleString('id-ID') : '50.000.000'}</div>
                             </div>
 
                             <div style={{ height: 8, background: 'var(--color-border)', borderRadius: 4, overflow: 'hidden', marginBottom: 'var(--space-lg)' }}>
-                                <div style={{ width: '75%', height: '100%', background: '#00C853', borderRadius: 4 }}></div>
+                                <div style={{ width: `${umkmData ? Math.round((umkmData.current / umkmData.target) * 100) : 75}%`, height: '100%', background: '#00C853', borderRadius: 4 }}></div>
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
@@ -301,8 +358,24 @@ export default function UmkmDashboard() {
                             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 12, background: '#FFF8E1', border: '1px solid #FFE082', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-xl)' }}>
                                 <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: '#F57C00', strokeWidth: 2, flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                                 <div style={{ fontSize: '13px', color: '#E65100', lineHeight: 1.5, fontWeight: 500 }}>
-                                    Transaksi cash tidak terdeteksi otomatis. Input di bawah akan diverifikasi silang dengan laporan penjualan sebelum dikunci.
+                                    Transaksi cash tidak terdeteksi otomatis. Input manual atau upload struk (AI Vision OCR) untuk menarik data otomatis dari /ocr.
                                 </div>
+                            </div>
+
+                            {/* OCR Upload Area */}
+                            <div style={{ marginBottom: 'var(--space-xl)' }}>
+                                <label style={{ display: 'block', padding: '24px', border: '2px dashed var(--color-border)', borderRadius: 8, textAlign: 'center', cursor: 'pointer', background: '#F9FAFB' }}>
+                                    <input type="file" accept="image/*" onChange={handleUploadReceipt} style={{ display: 'none' }} disabled={isUploadingOCR} />
+                                    {isUploadingOCR ? (
+                                        <div style={{ color: '#00A040', fontWeight: 'bold' }}>Sedang mengekstraksi data (AI Vision)...</div>
+                                    ) : (
+                                        <>
+                                            <div style={{ fontSize: 24, marginBottom: 8 }}>📷</div>
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-pri)' }}>Ambil / Upload Struk Cash</div>
+                                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>Data (Nominal & Kategori) akan diisi otomatis</div>
+                                        </>
+                                    )}
+                                </label>
                             </div>
 
                             <div style={{ display: 'flex', gap: 12, marginBottom: 'var(--space-xl)' }}>

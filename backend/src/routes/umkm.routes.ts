@@ -78,6 +78,8 @@ umkmRouter.get("/:id", async (req: Request, res: Response) => {
         },
         investments: {
           where: { status: "ACTIVE" },
+          take: 10, // [PERF-P1-05] Limit to prevent unbounded memory
+          orderBy: { createdAt: "desc" },
           include: {
             transactions: {
               where: { status: "CONFIRMED" },

@@ -58,14 +58,17 @@ app.use((_req, res) => {
   });
 });
 
-// ── ERROR HANDLER ─────────────────────────────────────────
+// ── ERROR HANDLER ─────────────────────────────────────
+// [EDGE-P2-07] Hide internal error details in production
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[ERROR]", err.message);
   console.error(err.stack);
 
+  const isDev = process.env.NODE_ENV !== "production";
+
   res.status(500).json({
     error: "INTERNAL_SERVER_ERROR",
-    message: err.message || "Terjadi kesalahan internal",
+    message: isDev ? err.message : "Terjadi kesalahan internal",
   });
 });
 

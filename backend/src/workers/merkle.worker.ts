@@ -17,6 +17,16 @@ import { redisConnection } from "../services/queue.service";
 import { prisma } from "../services/prisma.service";
 import { recordMerkleRoot } from "../services/blockchain.service";
 
+// [PERF-P1-02] Chunk helper to prevent OOM on large batches
+const CHUNK_SIZE = 50;
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 // ── REDLOCK SETUP ────────────────────────────────────────
 // Uses the existing ioredis connection from queue.service
 const redlock = new Redlock([redisConnection], {
@@ -143,19 +153,25 @@ export async function processMerkleBatch(
   }
 
   // 6. Update all transactions with Merkle data + CONFIRMED status
-  await Promise.all(
-    transactions.map((tx, index) =>
-      prisma.transaction.update({
-        where: { id: tx.id },
-        data: {
-          status: "CONFIRMED",
-          merkleRoot,
-          merkleLeaf: leaves[index],
-          polygonTxHash: txHash,
-        },
-      })
-    )
-  );
+  // [PERF-P1-02] Chunked updates to prevent connection pool exhaustion
+  const updatePairs = transactions.map((tx, index) => ({ tx, leaf: leaves[index] }));
+  const chunks = chunkArray(updatePairs, CHUNK_SIZE);
+
+  for (const chunk of chunks) {
+    await Promise.all(
+      chunk.map((pair) =>
+        prisma.transaction.update({
+          where: { id: pair.tx.id },
+          data: {
+            status: "CONFIRMED",
+            merkleRoot,
+            merkleLeaf: pair.leaf,
+            polygonTxHash: txHash,
+          },
+        })
+      )
+    );
+  }
 
   console.log(`[MERKLE] ✅ Batch ${batchDate} confirmed — TX: ${txHash}`);
   return txHash;

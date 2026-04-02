@@ -118,7 +118,7 @@ export function startPaymentWorker(): void {
     processPayment,
     {
       connection: redisConnection,
-      concurrency: 5,     // Process 5 jobs at a time max
+      concurrency: 3,     // [PERF-P1-06] Reduced from 5 to prevent DB pool contention
       limiter: {
         max: 10,
         duration: 1000,   // Max 10 per second

@@ -88,50 +88,61 @@ investRouter.post(
         return;
       }
 
-      // ── CREATE INVESTMENT RECORD ──────────────────────
-      // Generate a unique xenditTxId for idempotency (Rule 2)
+      // ── [PERF-P1-03] ATOMIC INVESTMENT FLOW ─────────────
+      // All DB writes + Xendit call wrapped in transaction
+      // to prevent orphaned records on partial failure.
       const xenditExternalId = `nemos-inv-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-      const investment = await prisma.investment.create({
-        data: {
-          amount: BigInt(amountNum),
-          userId,
-          umkmId,
-          xenditTxId: xenditExternalId,
-          status: "PENDING",
-        },
-      });
+      let investment: any;
+      let paymentData: any;
 
-      // ── CREATE XENDIT QRIS PAYMENT ────────────────────
-      let paymentData;
       try {
+        // Step 1: Create Investment + Transaction atomically
+        const dbResult = await prisma.$transaction(async (tx: any) => {
+          const inv = await tx.investment.create({
+            data: {
+              amount: BigInt(amountNum),
+              userId,
+              umkmId,
+              xenditTxId: xenditExternalId,
+              status: "PENDING",
+            },
+          });
+
+          await tx.transaction.create({
+            data: {
+              xenditId: xenditExternalId,
+              type: "INVESTMENT",
+              amount: BigInt(amountNum),
+              status: "PENDING",
+              investId: inv.id,
+            },
+          });
+
+          return inv;
+        });
+
+        investment = dbResult;
+
+        // Step 2: Create Xendit QRIS (outside DB transaction — external HTTP)
         paymentData = await createQrisPayment({
           externalId: xenditExternalId,
           amount: amountNum,
           description: `Investasi NEMOS — ${umkm.name}`,
         });
-      } catch (xenditError: any) {
-        // Rollback investment jika Xendit gagal
-        await prisma.investment.delete({ where: { id: investment.id } });
-
-        console.error("[INVEST] Xendit QRIS creation failed:", xenditError.message);
+      } catch (error: any) {
+        // If Xendit fails but DB succeeded, rollback DB records
+        if (investment) {
+          await prisma.transaction.deleteMany({ where: { xenditId: xenditExternalId } }).catch(() => {});
+          await prisma.investment.delete({ where: { id: investment.id } }).catch(() => {});
+        }
+        console.error("[INVEST] Investment flow failed:", error.message);
         res.status(502).json({
           error: "PAYMENT_GATEWAY_ERROR",
           message: "Gagal membuat pembayaran. Silakan coba lagi.",
         });
         return;
       }
-
-      // ── CREATE INITIAL TRANSACTION RECORD ─────────────
-      await prisma.transaction.create({
-        data: {
-          xenditId: xenditExternalId,
-          type: "INVESTMENT",
-          amount: BigInt(amountNum),
-          status: "PENDING",
-          investId: investment.id,
-        },
-      });
 
       // ── RESPONSE ──────────────────────────────────────
       res.status(201).json({

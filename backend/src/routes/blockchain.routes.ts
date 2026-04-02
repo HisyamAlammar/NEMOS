@@ -22,12 +22,14 @@
  * allowing anyone to write fake data to Polygon and drain the MATIC relayer wallet.
  */
 import { Router, Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import { authMiddleware } from "../middleware/auth";
 import { recordMerkleRoot, recordTranche, getContractStats } from "../services/blockchain.service";
 
 export const blockchainRouter = Router();
 
 // ── ADMIN GUARD MIDDLEWARE ────────────────────────────────
+// [SEC-P0-04] Uses crypto.timingSafeEqual to prevent timing attacks
 function adminGuard(req: Request, res: Response, next: NextFunction): void {
   // Path 1: JWT-authenticated user with ADMIN role
   if (req.user?.role === "ADMIN") {
@@ -51,9 +53,14 @@ function adminGuard(req: Request, res: Response, next: NextFunction): void {
     return;
   }
 
-  if (typeof internalSecret === "string" && internalSecret.length > 0 && internalSecret === expectedSecret) {
-    next();
-    return;
+  // [SEC-P0-04] Timing-safe comparison to prevent secret leakage
+  if (typeof internalSecret === "string" && internalSecret.length > 0) {
+    const a = Buffer.from(expectedSecret);
+    const b = Buffer.from(internalSecret);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      next();
+      return;
+    }
   }
 
   res.status(403).json({

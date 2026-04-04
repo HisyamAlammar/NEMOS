@@ -21,12 +21,11 @@ interface PaymentJobData {
   xenditId: string;
   externalId: string;
   amount: number;
-  type: "INVESTMENT" | "REPAYMENT";
-  rawPayload: Record<string, unknown>;
+  type: "INVESTMENT" | "REPAYMENT" | "PREMIUM_UPGRADE";
 }
 
 async function processPayment(job: Job<PaymentJobData>): Promise<void> {
-  const { xenditId, externalId, amount, type, rawPayload } = job.data;
+  const { xenditId, externalId, amount, type } = job.data;
 
   console.log(`[WORKER] Processing payment: ${xenditId}`);
 
@@ -48,16 +47,36 @@ async function processPayment(job: Job<PaymentJobData>): Promise<void> {
       where: { xenditId },
       create: {
         xenditId,
-        type: type === "INVESTMENT" ? "INVESTMENT" : "REPAYMENT",
+        type: type === "INVESTMENT" ? "INVESTMENT" : type === "PREMIUM_UPGRADE" ? "PREMIUM_UPGRADE" : "REPAYMENT",
         amount: BigInt(amount),
         status: "CONFIRMED",
-        rawPayload: JSON.parse(JSON.stringify(rawPayload)),
       },
       update: {
         status: "CONFIRMED",
-        rawPayload: JSON.parse(JSON.stringify(rawPayload)),
       },
     });
+
+    // ── BUG-H6 FIX: Handle PREMIUM_UPGRADE payments ──
+    // externalId pattern: "nemos-upgrade-{userId}-{timestamp}"
+    if (externalId.startsWith("nemos-upgrade-")) {
+      const parts = externalId.split("-");
+      // nemos-upgrade-{userId}-{timestamp} → userId is parts[2]
+      const upgradeUserId = parts.slice(2, -1).join("-"); // handles cuid with dashes
+
+      if (upgradeUserId) {
+        await tx.user.update({
+          where: { id: upgradeUserId },
+          data: { tier: "PREMIUM" },
+        });
+
+        console.log(`[WORKER] ✅ Tier upgraded to PREMIUM for user: ${upgradeUserId}`);
+        console.log(`         TX: ${xenditId}`);
+        console.log(`         Amount: Rp ${amount.toLocaleString("id-ID")}`);
+      } else {
+        console.warn(`[WORKER] ⚠️ Could not extract userId from externalId: ${externalId}`);
+      }
+      return; // Premium upgrade complete — no investment/tranche processing needed
+    }
 
     // 2. Find the linked Investment via externalId (= xenditTxId)
     const investment = await tx.investment.findUnique({
@@ -121,7 +140,7 @@ export function startPaymentWorker(): void {
     processPayment,
     {
       connection: redisConnection,
-      concurrency: 5,     // Process 5 jobs at a time max
+      concurrency: 3,     // [PERF-P1-06] Reduced from 5 to prevent DB pool contention
       limiter: {
         max: 10,
         duration: 1000,   // Max 10 per second

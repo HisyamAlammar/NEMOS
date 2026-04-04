@@ -45,6 +45,7 @@ enum InvestStatus {
 enum TxType {
   INVESTMENT
   REPAYMENT
+  PREMIUM_UPGRADE
 }
 
 enum TxStatus {

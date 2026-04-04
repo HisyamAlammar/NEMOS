@@ -1,5 +1,8 @@
 /**
  * services/auth.service.ts — Authentication Logic (Prisma 6)
+ *
+ * [SEC-P0-01] JWT payload now includes tier & learningProgress
+ *             to prevent client-side state spoofing.
  */
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -21,10 +24,13 @@ interface LoginInput {
   password: string;
 }
 
+// [SEC-P0-01] Extended JWT payload with tier & learningProgress
 interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  tier: string;
+  learningProgress: number;
 }
 
 export async function registerUser(input: RegisterInput) {
@@ -45,11 +51,18 @@ export async function registerUser(input: RegisterInput) {
     },
     select: {
       id: true, email: true, name: true, role: true,
-      tier: true, riskProfile: true, learningProgress: true, createdAt: true,
+      tier: true, learningProgress: true, createdAt: true,
     },
   });
 
-  const token = generateToken({ userId: user.id, email: user.email, role: user.role });
+  // [SEC-P0-01] Include tier & learningProgress in JWT
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    tier: user.tier,
+    learningProgress: user.learningProgress,
+  });
   return { user, token };
 }
 
@@ -60,11 +73,18 @@ export async function loginUser(input: LoginInput) {
   const isMatch = await bcrypt.compare(input.password, user.password);
   if (!isMatch) throw new AppError("Email atau password salah", 401);
 
-  const token = generateToken({ userId: user.id, email: user.email, role: user.role });
+  // [SEC-P0-01] Include tier & learningProgress in JWT
+  const token = generateToken({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    tier: user.tier,
+    learningProgress: user.learningProgress,
+  });
   return {
     user: {
       id: user.id, email: user.email, name: user.name, role: user.role,
-      tier: user.tier, riskProfile: user.riskProfile,
+      tier: user.tier,
       learningProgress: user.learningProgress, createdAt: user.createdAt,
     },
     token,
@@ -76,7 +96,7 @@ export async function getCurrentUser(userId: string) {
     where: { id: userId },
     select: {
       id: true, email: true, name: true, role: true,
-      tier: true, riskProfile: true, learningProgress: true, createdAt: true,
+      tier: true, learningProgress: true, createdAt: true,
     },
   });
   if (!user) throw new AppError("User tidak ditemukan", 404);

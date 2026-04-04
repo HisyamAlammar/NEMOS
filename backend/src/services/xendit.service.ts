@@ -3,6 +3,7 @@
  *
  * Tidak boleh import ethers, alchemy, atau blockchain logic apapun.
  */
+import crypto from "crypto";
 import { env } from "../config/env";
 
 // ── TYPES ─────────────────────────────────────────────────
@@ -73,14 +74,45 @@ export async function createQrisPayment(params: CreateQrisParams): Promise<QrisR
   };
 }
 
-// ── VERIFY WEBHOOK SIGNATURE ──────────────────────────────
+// ── VERIFY WEBHOOK SIGNATURE [H-02 Fix] ──────────────────
+/**
+ * Verifies Xendit webhook callback token.
+ *
+ * Security model:
+ *   - Production: MUST have XENDIT_WEBHOOK_TOKEN configured. Throws if missing.
+ *   - Development: Warns and skips verification if token not configured.
+ *   - When configured: Uses crypto.timingSafeEqual to prevent timing attacks.
+ */
 export function verifyWebhookSignature(
   webhookToken: string,
   incomingToken: string
 ): boolean {
+  // Case 1: Webhook token not configured
   if (!webhookToken) {
-    console.warn("[XENDIT] ⚠️ Webhook token not configured — skipping verification (sandbox mode)");
+    if (env.NODE_ENV === "production") {
+      throw new Error(
+        "[XENDIT] CRITICAL: Webhook token not configured in production. " +
+        "Set XENDIT_WEBHOOK_TOKEN environment variable immediately."
+      );
+    }
+    // Development/staging — warn but allow (for sandbox testing)
+    console.warn(
+      "[XENDIT] ⚠️ WARNING: Webhook signature verification SKIPPED. " +
+      "Acceptable ONLY in development. Set XENDIT_WEBHOOK_TOKEN for staging/prod."
+    );
     return true;
   }
-  return webhookToken === incomingToken;
+
+  // Case 2: Webhook token configured — use timing-safe comparison
+  // crypto.timingSafeEqual prevents timing attacks where an attacker
+  // can deduce the secret by measuring response time differences.
+  const a = Buffer.from(webhookToken);
+  const b = Buffer.from(incomingToken);
+
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(a, b);
 }
+

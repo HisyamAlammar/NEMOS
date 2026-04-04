@@ -3,6 +3,8 @@
  *
  * Extracts and verifies JWT from Authorization header.
  * Attaches user info to req.user for downstream handlers.
+ *
+ * [SEC-P0-01] Extended with tier & learningProgress from JWT.
  */
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, AppError } from "../services/auth.service";
@@ -15,6 +17,8 @@ declare global {
         userId: string;
         email: string;
         role: string;
+        tier: string;
+        learningProgress: number;
       };
     }
   }
@@ -39,6 +43,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
       userId: payload.userId,
       email: payload.email,
       role: payload.role,
+      tier: payload.tier || "FREE",
+      learningProgress: payload.learningProgress ?? 0,
     };
 
     next();

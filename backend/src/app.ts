@@ -11,6 +11,8 @@ import cors from "cors";
 import { authRouter } from "./routes/auth.routes";
 import { investRouter } from "./routes/invest.routes";
 import { webhookRouter } from "./routes/webhook.routes";
+import { blockchainRouter } from "./routes/blockchain.routes";
+import { umkmRouter } from "./routes/umkm.routes";
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.use(express.json({ limit: "10mb" }));
 // ── ROUTES ────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
 app.use("/api", investRouter);
+app.use("/api/blockchain", blockchainRouter);
+app.use("/api/umkm", umkmRouter);
 
 // ── HEALTH CHECK ──────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
@@ -54,14 +58,17 @@ app.use((_req, res) => {
   });
 });
 
-// ── ERROR HANDLER ─────────────────────────────────────────
+// ── ERROR HANDLER ─────────────────────────────────────
+// [EDGE-P2-07] Hide internal error details in production
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[ERROR]", err.message);
   console.error(err.stack);
 
+  const isDev = process.env.NODE_ENV !== "production";
+
   res.status(500).json({
     error: "INTERNAL_SERVER_ERROR",
-    message: err.message || "Terjadi kesalahan internal",
+    message: isDev ? err.message : "Terjadi kesalahan internal",
   });
 });
 

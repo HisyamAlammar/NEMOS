@@ -15,6 +15,10 @@ const requiredEnvVars = [
   "JWT_SECRET",
   "XENDIT_SECRET_KEY",
   "NEMOS_CONTRACT_ADDRESS",
+  "POLYGON_AMOY_RPC",        // [H-01] Rule 8: relayer harus punya RPC
+  "RELAYER_PRIVATE_KEY",     // [H-01] Rule 8: relayer harus punya private key
+  "XENDIT_WEBHOOK_TOKEN",    // [H-02] Rule 8: webhook verification wajib ada
+  "ADMIN_INTERNAL_SECRET",   // [P0-C] Required for adminGuard dual-path
 ] as const;
 
 for (const envVar of requiredEnvVars) {
@@ -40,12 +44,13 @@ export const env = {
 
   // Xendit
   XENDIT_SECRET_KEY: process.env.XENDIT_SECRET_KEY!,
-  XENDIT_WEBHOOK_TOKEN: process.env.XENDIT_WEBHOOK_TOKEN || "", // Optional di sandbox
+  XENDIT_WEBHOOK_TOKEN: process.env.XENDIT_WEBHOOK_TOKEN!,
 
   // Blockchain
   NEMOS_CONTRACT_ADDRESS: process.env.NEMOS_CONTRACT_ADDRESS!,
-  POLYGON_AMOY_RPC: process.env.POLYGON_AMOY_RPC || "",
-  RELAYER_PRIVATE_KEY: process.env.RELAYER_PRIVATE_KEY || "",
+  POLYGON_AMOY_RPC: process.env.POLYGON_AMOY_RPC!,
+  RELAYER_PRIVATE_KEY: process.env.RELAYER_PRIVATE_KEY!,
+  ADMIN_INTERNAL_SECRET: process.env.ADMIN_INTERNAL_SECRET!,
 
   // Server
   PORT: parseInt(process.env.PORT || "4000", 10),

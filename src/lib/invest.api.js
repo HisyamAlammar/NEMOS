@@ -1,129 +1,47 @@
 /**
  * lib/invest.api.js — Investment API Functions
  *
- * Wraps backend investment endpoints.
- * Currently returns mock data matching data.js structure
- * while backend invest endpoints are being finalized.
+ * Sprint 6 [P0-NEW-02]: Wire frontend to POST /api/invest.
+ * Sprint 6 [P0-NEW-03]: Wire frontend to tier upgrade.
  */
-import { apiFetch, aiFetch } from './api';
-import { umkmData } from '../data';
+import { apiFetch } from './api';
 
-// ── FLAG: Toggle between mock and real API ────────────────
-const USE_MOCK = true; // Set to false when backend invest endpoints are ready
-
-// ── GET ALL UMKM ──────────────────────────────────────────
 /**
- * Fetch list of available UMKM for investment.
- * @returns {Promise<object[]>}
+ * Create a new investment via Xendit QRIS.
+ * Requires authenticated user with learningProgress >= 100.
+ *
+ * @param {string} umkmId - Target UMKM database ID
+ * @param {number} amount - Investment amount in IDR (min 100,000)
+ * @returns {Promise<{ data: { investmentId, payment: { qrString, amount, expiresAt }, umkm } }>}
  */
-export async function getUmkmList() {
-  if (USE_MOCK) {
-    await _delay(300);
-    return { data: umkmData };
-  }
-
-  return apiFetch('/umkm');
+export async function createInvestment(umkmId, amount) {
+    return apiFetch('/invest', {
+        method: 'POST',
+        body: JSON.stringify({ umkmId, amount }),
+    });
 }
 
-// ── GET UMKM BY ID ────────────────────────────────────────
 /**
- * Fetch single UMKM detail.
- * @param {string|number} id
- * @returns {Promise<object>}
+ * Upgrade user tier to PREMIUM.
+ * BUG-H6 FIX: Returns QRIS payment for user to scan.
+ * Tier is upgraded only after webhook confirms payment.
+ *
+ * @returns {Promise<{ data: { payment: { qrString, amount, expiresAt, externalId } } }>}
  */
-export async function getUmkmById(id) {
-  if (USE_MOCK) {
-    await _delay(200);
-    const umkm = umkmData.find((u) => u.id === Number(id));
-    if (!umkm) throw new Error('UMKM tidak ditemukan');
-    return { data: umkm };
-  }
-
-  return apiFetch(`/umkm/${id}`);
+export async function upgradeToPremium() {
+    return apiFetch('/auth/upgrade-tier', {
+        method: 'POST',
+        body: JSON.stringify({ tier: 'PREMIUM' }),
+    });
 }
 
-// ── CREATE INVESTMENT ─────────────────────────────────────
 /**
- * Create a new investment (guarded by Investment Gate).
- * @param {{ umkmId: string, amount: number }} data
- * @returns {Promise<{ investmentId: string, payment: object }>}
+ * Check investment payment status (polling).
+ * BUG-H8: Used by PaymentModal to detect when payment is confirmed.
+ *
+ * @param {string} investmentId - Investment database ID
+ * @returns {Promise<{ investmentId, status, amount, paidAt }>}
  */
-export async function createInvestment(data) {
-  if (USE_MOCK) {
-    await _delay(800);
-    return {
-      message: 'Investasi berhasil dibuat',
-      data: {
-        investmentId: `mock-inv-${Date.now()}`,
-        payment: {
-          qrString: 'mock-qr-string',
-          amount: data.amount,
-          expiresAt: new Date(Date.now() + 86400000).toISOString(),
-        },
-      },
-    };
-  }
-
-  return apiFetch('/invest', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-// ── VERIFY RECEIPT (AI Service) ───────────────────────────
-/**
- * Send receipt image to AI service for verification.
- * @param {File} file - Receipt image file
- * @returns {Promise<{ confidence: number, extracted: object, status: string }>}
- */
-export async function verifyReceipt(file) {
-  const formData = new FormData();
-  formData.append('receipt', file);
-
-  // This always calls the real AI service (no mock)
-  return aiFetch('/ocr/verify-receipt', {
-    method: 'POST',
-    body: formData,
-    // No Content-Type header — browser sets it with boundary for FormData
-  });
-}
-
-// ── GET INVESTOR PORTFOLIO ────────────────────────────────
-/**
- * Get current user's investment portfolio.
- * @returns {Promise<object[]>}
- */
-export async function getPortfolio() {
-  if (USE_MOCK) {
-    await _delay(300);
-    return {
-      data: [
-        {
-          id: 'mock-inv-1',
-          umkm: umkmData[0],
-          amount: 2000000,
-          status: 'ACTIVE',
-          createdAt: '2026-03-15T10:00:00Z',
-          tranches: [
-            { stage: 1, amount: 1200000, aiVerified: false, releasedAt: '2026-03-16T10:00:00Z' },
-          ],
-        },
-        {
-          id: 'mock-inv-2',
-          umkm: umkmData[3],
-          amount: 1000000,
-          status: 'PENDING',
-          createdAt: '2026-03-28T14:30:00Z',
-          tranches: [],
-        },
-      ],
-    };
-  }
-
-  return apiFetch('/investments');
-}
-
-// ── HELPER ────────────────────────────────────────────────
-function _delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export async function checkInvestmentStatus(investmentId) {
+    return apiFetch(`/invest/${investmentId}/status`);
 }

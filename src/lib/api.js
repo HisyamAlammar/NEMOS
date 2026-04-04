@@ -91,4 +91,17 @@ export async function aiFetch(path, options = {}) {
   return data;
 }
 
+/**
+ * Update learning progress in database.
+ * Returns updated user + fresh JWT with new learningProgress.
+ * @param {number} progress - Progress value (0-100)
+ * @returns {Promise<{ message: string, data: { user: object, token: string } }>}
+ */
+export async function updateLearningProgress(progress) {
+  return apiFetch('/auth/progress', {
+    method: 'POST',
+    body: JSON.stringify({ progress }),
+  });
+}
+
 export { API_BASE_URL, AI_BASE_URL };

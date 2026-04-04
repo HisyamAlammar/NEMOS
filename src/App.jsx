@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import nemosLogo from './assets/NEMOS LOGO.png';
+import { useAuthStore } from './stores/auth.store';
 
 // Layout & Navigation CSS locally for the App shell
 import './index.css';
@@ -24,8 +25,11 @@ import Register from './pages/Register';
 // ==========================================
 // INVESTOR TOP NAVIGATION
 // ==========================================
-function InvestorTopNav({ userTier, setUserTier }) {
+function InvestorTopNav({ userTier }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const userName = user?.name || 'Investor';
+  const userInitial = userName.charAt(0).toUpperCase();
   const navigate = useNavigate();
 
   return (
@@ -49,15 +53,17 @@ function InvestorTopNav({ userTier, setUserTier }) {
           <NavLink to="/learn" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>AI Learn Hub</NavLink>
           <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>UMKM Arena</NavLink>
           <NavLink to="/impact" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Laporan Dampak</NavLink>
+          {user?.role === 'UMKM_OWNER' && (
+            <NavLink to="/umkm-dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} style={{ color: '#00C853' }}>🏪 Panel Usaha</NavLink>
+          )}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
           <div style={{ textAlign: 'right' }} className="hide-on-mobile">
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>Budi Santoso</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-pri)' }}>{userName}</div>
             <div style={{ marginTop: 3, position: 'relative' }} className="premium-badge-wrap">
               <span
-                onClick={() => setUserTier(userTier === 'premium' ? 'free' : 'premium')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: userTier === 'premium' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : '#E5E7EB', color: userTier === 'premium' ? '#fff' : '#6B7280', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: userTier === 'premium' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : '#E5E7EB', color: userTier === 'premium' ? '#fff' : '#6B7280', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 4, transition: 'all 0.2s' }}>
                 {userTier === 'premium' && <svg viewBox="0 0 24 24" style={{ width: 9, height: 9, fill: 'currentColor' }}><path d="M2 20 L6 10 L12 14 L18 4 L22 20 Z" /></svg>}
                 {userTier === 'premium' ? 'PREMIUM' : 'REGULAR'}
               </span>
@@ -78,7 +84,7 @@ function InvestorTopNav({ userTier, setUserTier }) {
             </svg>
           </button>
 
-          <div className="hide-on-mobile" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
+          <div className="hide-on-mobile" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--color-primary)' }}>{userInitial}</div>
 
           <NavLink to="/login" className="hide-on-mobile" style={{ color: 'var(--color-text-muted)', marginLeft: 8 }} title="Log Out">
             <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
@@ -96,8 +102,8 @@ function InvestorTopNav({ userTier, setUserTier }) {
             <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>B</div>
-                <div style={{ fontSize: '14px', fontWeight: 600 }}>Budi Santoso</div>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-blue-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>{userInitial}</div>
+                <div style={{ fontSize: '14px', fontWeight: 600 }}>{userName}</div>
               </div>
               <NavLink to="/login" style={{ color: 'var(--color-danger)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Logout</NavLink>
             </div>
@@ -127,6 +133,8 @@ function InvestorTopNav({ userTier, setUserTier }) {
 // ==========================================
 function UmkmSidebar({ sidebarOpen, setSidebarOpen }) {
   const closeSidebar = () => setSidebarOpen(false);
+  const user = useAuthStore((s) => s.user);
+  const ownerName = user?.name || 'Pengusaha';
 
   const menuItems = [
     {
@@ -216,14 +224,14 @@ function UmkmSidebar({ sidebarOpen, setSidebarOpen }) {
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <img
                 src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
-                alt="Ibu Sari"
+                alt={ownerName}
                 style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', display: 'block' }}
               />
               <div style={{ position: 'absolute', bottom: 1, right: 1, width: 9, height: 9, borderRadius: '50%', background: '#FFFFFF', border: '1.5px solid #00C853' }} />
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>Ibu Sari</div>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Dapur Nusantara</div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{ownerName}</div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Panel Usaha</div>
             </div>
           </div>
 
@@ -285,71 +293,76 @@ function MobileHeader({ setSidebarOpen }) {
   );
 }
 
-// Floating Switcher — hidden on auth pages
-function RoleSwitcher({ userRole, setUserRole }) {
-  const loc = useLocation();
-  if (loc.pathname === '/login' || loc.pathname === '/register') return null;
-  return (
-    <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000, background: '#fff', padding: 8, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', gap: 8, border: '1px solid var(--color-border)' }}>
-      <button onClick={() => setUserRole('investor')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'investor' ? '#1E3A5F' : 'transparent', color: userRole === 'investor' ? '#fff' : '#1E3A5F', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Investor</button>
-      <button onClick={() => setUserRole('umkm_owner')} style={{ padding: '8px 16px', borderRadius: 8, background: userRole === 'umkm_owner' ? '#00C853' : 'transparent', color: userRole === 'umkm_owner' ? '#fff' : '#00C853', fontWeight: 600, fontSize: 12, border: 'none', cursor: 'pointer' }}>Pengusaha UMKM</button>
-    </div>
-  );
-}
+
 
 // ==========================================
 // MAIN APP COMPONENT
 // ==========================================
-function App() {
+function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState('investor'); // 'investor' | 'umkm_owner'
-  const [userTier, setUserTier] = useState('premium'); // 'premium' | 'free'
+  const location = useLocation();
+
+  // ── BUG-H2 & BUG-H3 FIX: Derive tier & role from auth store ──
+  const { user } = useAuthStore();
+  const userTier = user?.tier?.toLowerCase() ?? 'free';
+  const userRole = user?.role?.toLowerCase() ?? 'investor';
+
+  // CTO-05: UMKM_OWNER sees investor layout by default.
+  // Only show UMKM sidebar layout when explicitly on /umkm-* paths.
+  const isOnUmkmPage = location.pathname.startsWith('/umkm-');
+  const showUmkmLayout = userRole === 'umkm_owner' && isOnUmkmPage;
 
   return (
+    <div className={`app-shell ${showUmkmLayout ? 'theme-umkm' : 'theme-investor'}`}>
+
+      {showUmkmLayout ? (
+        <div style={{ width: '100%', background: 'var(--color-bg)' }}>
+          <MobileHeader setSidebarOpen={setSidebarOpen} />
+          <UmkmSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          <main className="main-content">
+            <Routes>
+              <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
+              <Route path="/umkm-omzet" element={<UmkmOmzet />} />
+              <Route path="/umkm-kewajiban" element={<UmkmKewajiban />} />
+              <Route path="/umkm-komunitas" element={<UmkmKomunitas />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/umkm-dashboard" replace />} />
+            </Routes>
+          </main>
+        </div>
+      ) : (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg)' }}>
+          <InvestorTopNav userTier={userTier} />
+          <main style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/learn" element={<LearnHub />} />
+              <Route path="/arena" element={<UmkmArena />} />
+              <Route path="/detail/:id" element={<UmkmDetail />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/protection" element={<Protection />} />
+              <Route path="/impact" element={<Impact />} />
+              <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function App() {
+  return (
     <BrowserRouter>
-      <RoleSwitcher userRole={userRole} setUserRole={setUserRole} />
-      <div className={`app-shell ${userRole === 'investor' ? 'theme-investor' : 'theme-umkm'}`}>
-
-        {userRole === 'investor' ? (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg)' }}>
-            <InvestorTopNav userTier={userTier} setUserTier={setUserTier} />
-            <main style={{ flex: 1 }}>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/learn" element={<LearnHub />} />
-                <Route path="/arena" element={<UmkmArena userTier={userTier} />} />
-                <Route path="/detail/:id" element={<UmkmDetail userTier={userTier} />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/protection" element={<Protection />} />
-                <Route path="/impact" element={<Impact />} />
-                <Route path="/login" element={<Login userRole={userRole} setUserRole={setUserRole} />} />
-                <Route path="/register" element={<Register />} />
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
-        ) : (
-          <div style={{ width: '100%', background: 'var(--color-bg)' }}>
-            <MobileHeader setSidebarOpen={setSidebarOpen} />
-            <UmkmSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <main className="main-content">
-              <Routes>
-                <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
-                <Route path="/umkm-omzet" element={<UmkmOmzet />} />
-                <Route path="/umkm-kewajiban" element={<UmkmKewajiban />} />
-                <Route path="/umkm-komunitas" element={<UmkmKomunitas />} />
-                <Route path="/login" element={<Login userRole={userRole} setUserRole={setUserRole} />} />
-                <Route path="/register" element={<Register />} />
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/umkm-dashboard" replace />} />
-              </Routes>
-            </main>
-          </div>
-        )}
-
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 }

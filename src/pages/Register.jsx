@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/auth.store';
 import nemosLogo from '../assets/NEMOS LOGO.png';
 
 // ── Shared Input Style ───────────────────────────────────────
@@ -21,11 +22,12 @@ function Field({ label, children }) {
     return <div style={fieldGap}><label style={labelStyle}>{label}</label>{children}</div>;
 }
 
-function TextInput({ type = 'text', placeholder, value, onChange }) {
+function TextInput({ type = 'text', placeholder, value, onChange, autoComplete }) {
     return (
         <input
             type={type} placeholder={placeholder}
             value={value} onChange={onChange}
+            autoComplete={autoComplete}
             style={inputStyle}
             onFocus={e => e.target.style.borderColor = '#1E3A5F'}
             onBlur={e => e.target.style.borderColor = '#E5E7EB'}
@@ -45,7 +47,7 @@ function SelectInput({ value, onChange, children }) {
     );
 }
 
-function PasswordInput({ placeholder, value, onChange }) {
+function PasswordInput({ placeholder, value, onChange, autoComplete }) {
     const [show, setShow] = useState(false);
     return (
         <div style={{ position: 'relative' }}>
@@ -53,6 +55,7 @@ function PasswordInput({ placeholder, value, onChange }) {
                 type={show ? 'text' : 'password'}
                 placeholder={placeholder}
                 value={value} onChange={onChange}
+                autoComplete={autoComplete}
                 style={{ ...inputStyle, paddingRight: 44 }}
                 onFocus={e => e.target.style.borderColor = '#1E3A5F'}
                 onBlur={e => e.target.style.borderColor = '#E5E7EB'}
@@ -180,52 +183,111 @@ function LeftPanel({ role }) {
 }
 
 // ── INVESTOR FORM ─────────────────────────────────────────────
-function InvestorForm({ onSubmit }) {
+function InvestorForm({ onSubmit, isLoading, submitError }) {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [validationError, setValidationError] = useState('');
+
+    const handleSubmit = () => {
+        setValidationError('');
+        if (password !== confirmPassword) {
+            setValidationError('Kata sandi dan konfirmasi tidak cocok');
+            return;
+        }
+        if (!termsAccepted) {
+            setValidationError('Anda harus menyetujui Syarat & Ketentuan');
+            return;
+        }
+        onSubmit({ name, email, password, role: 'INVESTOR', phone: phone ? `+62${phone}` : undefined });
+    };
+
+    const displayError = validationError || submitError;
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Field label="Nama Lengkap"><TextInput placeholder="Contoh: Budi Santoso" /></Field>
-            <Field label="Alamat Email"><TextInput type="email" placeholder="nama@email.com" /></Field>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Field label="Nama Lengkap"><TextInput placeholder="Contoh: Budi Santoso" value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></Field>
+            <Field label="Alamat Email"><TextInput type="email" placeholder="nama@email.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" /></Field>
             <Field label="Nomor HP">
                 <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ height: 38, padding: '0 12px', border: '1px solid #E5E7EB', borderRadius: 8, background: '#F3F4F6', display: 'flex', alignItems: 'center', fontSize: 13, color: '#374151', fontWeight: 600, flexShrink: 0 }}>+62</div>
-                    <input type="tel" placeholder="812-3456-7890" style={{ ...inputStyle, flex: 1 }}
+                    <input type="tel" placeholder="812-3456-7890" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" style={{ ...inputStyle, flex: 1 }}
                         onFocus={e => e.target.style.borderColor = '#1E3A5F'}
                         onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                 </div>
             </Field>
-            <Field label="Kata Sandi"><PasswordInput placeholder="Minimal 8 karakter" /></Field>
-            <Field label="Konfirmasi Kata Sandi"><PasswordInput placeholder="Ulangi kata sandi" /></Field>
+            <Field label="Kata Sandi"><PasswordInput placeholder="Minimal 8 karakter" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" /></Field>
+            <Field label="Konfirmasi Kata Sandi"><PasswordInput placeholder="Ulangi kata sandi" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" /></Field>
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-                <input type="checkbox" style={{ marginTop: 2, accentColor: '#1E3A5F', width: 15, height: 15, flexShrink: 0 }} />
+                <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ marginTop: 2, accentColor: '#1E3A5F', width: 15, height: 15, flexShrink: 0 }} />
                 <span>Saya telah membaca dan menyetujui <span style={{ color: '#1E3A5F', fontWeight: 600 }}>Syarat &amp; Ketentuan</span> NEMOS</span>
             </label>
 
-            <button onClick={onSubmit}
-                style={{ width: '100%', height: 40, background: '#1E3A5F', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, transition: 'opacity 0.2s' }}
-                onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
-                onMouseOut={e => e.currentTarget.style.opacity = '1'}
+            {displayError && (
+                <div style={{ padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 13, color: '#DC2626', lineHeight: 1.4 }}>
+                    {displayError}
+                </div>
+            )}
+
+            <button type="submit" disabled={isLoading}
+                style={{ width: '100%', height: 40, background: '#1E3A5F', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, marginTop: 4, transition: 'opacity 0.2s' }}
+                onMouseOver={e => { if (!isLoading) e.currentTarget.style.opacity = '0.88'; }}
+                onMouseOut={e => { if (!isLoading) e.currentTarget.style.opacity = '1'; }}
             >
-                Buat Akun Investor
+                {isLoading ? 'Mendaftarkan...' : 'Buat Akun Investor'}
             </button>
-        </div>
+        </form>
     );
 }
 
 // ── UMKM FORM ─────────────────────────────────────────────────
 const PAYMENT_METHODS = ['QRIS', 'Transfer Bank', 'Tunai', 'E-commerce', 'Lainnya'];
 
-function UmkmForm({ onSubmit }) {
+function UmkmForm({ onSubmit, isLoading, submitError }) {
     const [step, setStep] = useState(1);
     const [payMethods, setPayMethods] = useState([]);
 
+    // Step 1: Personal data
+    const [ownerName, setOwnerName] = useState('');
+    const [nik, setNik] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Step 2: Business data
+    const [businessName, setBusinessName] = useState('');
+    const [category, setCategory] = useState('');
+    const [address, setAddress] = useState('');
+    const [city, setCity] = useState('');
+    const [duration, setDuration] = useState('');
+    const [revenue, setRevenue] = useState('');
+
+    // Validation
+    const [validationError, setValidationError] = useState('');
+
     const togglePay = (m) => setPayMethods(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
 
-    const greenBtn = (label, onClick) => (
-        <button onClick={onClick}
-            style={{ width: '100%', height: 40, background: '#00C853', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4, transition: 'opacity 0.2s' }}
-            onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
-            onMouseOut={e => e.currentTarget.style.opacity = '1'}
+    const handleFinalSubmit = () => {
+        setValidationError('');
+        if (password !== confirmPassword) {
+            setValidationError('Kata sandi dan konfirmasi tidak cocok');
+            return;
+        }
+        onSubmit({ name: ownerName, email, password, role: 'UMKM_OWNER', phone: phone ? `+62${phone}` : undefined });
+    };
+
+    const displayError = validationError || submitError;
+
+    const greenBtn = (label, onClick, disabled = false) => (
+        <button type={disabled !== false ? 'submit' : 'button'} onClick={disabled !== false ? undefined : onClick} disabled={disabled}
+            style={{ width: '100%', height: 40, background: '#00C853', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.7 : 1, marginTop: 4, transition: 'opacity 0.2s' }}
+            onMouseOver={e => { if (!disabled) e.currentTarget.style.opacity = '0.88'; }}
+            onMouseOut={e => { if (!disabled) e.currentTarget.style.opacity = '1'; }}
         >{label}</button>
     );
 
@@ -234,43 +296,43 @@ function UmkmForm({ onSubmit }) {
             <StepIndicator current={step} />
 
             {step === 1 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Field label="Nama Lengkap Pemilik"><TextInput placeholder="Sesuai KTP" /></Field>
-                    <Field label="NIK (16 Digit)"><TextInput type="number" placeholder="3271xxxxxxxxxxxx" /></Field>
-                    <Field label="Alamat Email"><TextInput type="email" placeholder="nama@email.com" /></Field>
+                <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <Field label="Nama Lengkap Pemilik"><TextInput placeholder="Sesuai KTP" value={ownerName} onChange={e => setOwnerName(e.target.value)} autoComplete="name" /></Field>
+                    <Field label="NIK (16 Digit)"><TextInput type="number" placeholder="3271xxxxxxxxxxxx" value={nik} onChange={e => setNik(e.target.value)} /></Field>
+                    <Field label="Alamat Email"><TextInput type="email" placeholder="nama@email.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" /></Field>
                     <Field label="Nomor HP">
                         <div style={{ display: 'flex', gap: 8 }}>
                             <div style={{ height: 38, padding: '0 12px', border: '1px solid #E5E7EB', borderRadius: 8, background: '#F3F4F6', display: 'flex', alignItems: 'center', fontSize: 13, color: '#374151', fontWeight: 600, flexShrink: 0 }}>+62</div>
-                            <input type="tel" placeholder="812-3456-7890" style={{ ...inputStyle, flex: 1 }}
+                            <input type="tel" placeholder="812-3456-7890" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" style={{ ...inputStyle, flex: 1 }}
                                 onFocus={e => e.target.style.borderColor = '#00C853'}
                                 onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                         </div>
                     </Field>
-                    <Field label="Kata Sandi"><PasswordInput placeholder="Minimal 8 karakter" /></Field>
-                    <Field label="Konfirmasi Kata Sandi"><PasswordInput placeholder="Ulangi kata sandi" /></Field>
+                    <Field label="Kata Sandi"><PasswordInput placeholder="Minimal 8 karakter" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" /></Field>
+                    <Field label="Konfirmasi Kata Sandi"><PasswordInput placeholder="Ulangi kata sandi" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" /></Field>
                     {greenBtn('Lanjut ke Data Usaha →', () => setStep(2))}
-                </div>
+                </form>
             )}
 
             {step === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Field label="Nama Usaha"><TextInput placeholder="Contoh: Dapur Nusantara" /></Field>
+                    <Field label="Nama Usaha"><TextInput placeholder="Contoh: Dapur Nusantara" value={businessName} onChange={e => setBusinessName(e.target.value)} /></Field>
                     <Field label="Kategori Usaha">
-                        <SelectInput><option value="">Pilih kategori...</option>{['Kuliner', 'Kerajinan', 'Agrikultur', 'Retail', 'Jasa', 'Lainnya'].map(c => <option key={c}>{c}</option>)}</SelectInput>
+                        <SelectInput value={category} onChange={e => setCategory(e.target.value)}><option value="">Pilih kategori...</option>{['Kuliner', 'Kerajinan', 'Agrikultur', 'Retail', 'Jasa', 'Lainnya'].map(c => <option key={c}>{c}</option>)}</SelectInput>
                     </Field>
                     <Field label="Alamat Usaha Lengkap">
-                        <textarea placeholder="Jl. contoh no. 1, RT/RW..." rows={2}
+                        <textarea placeholder="Jl. contoh no. 1, RT/RW..." rows={2} value={address} onChange={e => setAddress(e.target.value)}
                             style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical', lineHeight: 1.5 }}
                             onFocus={e => e.target.style.borderColor = '#00C853'}
                             onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                     </Field>
-                    <Field label="Kota / Kabupaten"><TextInput placeholder="Contoh: Bandung" /></Field>
+                    <Field label="Kota / Kabupaten"><TextInput placeholder="Contoh: Bandung" value={city} onChange={e => setCity(e.target.value)} /></Field>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                         <Field label="Lama Usaha Berjalan">
-                            <SelectInput><option value="">Pilih...</option>{['6-12 bulan', '1-2 tahun', '2-5 tahun', '5 tahun ke atas'].map(o => <option key={o}>{o}</option>)}</SelectInput>
+                            <SelectInput value={duration} onChange={e => setDuration(e.target.value)}><option value="">Pilih...</option>{['6-12 bulan', '1-2 tahun', '2-5 tahun', '5 tahun ke atas'].map(o => <option key={o}>{o}</option>)}</SelectInput>
                         </Field>
                         <Field label="Rata-rata Omzet Bulanan">
-                            <SelectInput><option value="">Pilih...</option>{['< Rp 5 juta', 'Rp 5-20 juta', 'Rp 20-50 juta', '> Rp 50 juta'].map(o => <option key={o}>{o}</option>)}</SelectInput>
+                            <SelectInput value={revenue} onChange={e => setRevenue(e.target.value)}><option value="">Pilih...</option>{['< Rp 5 juta', 'Rp 5-20 juta', 'Rp 20-50 juta', '> Rp 50 juta'].map(o => <option key={o}>{o}</option>)}</SelectInput>
                         </Field>
                     </div>
                     <Field label="Metode Pembayaran yang Digunakan">
@@ -294,7 +356,7 @@ function UmkmForm({ onSubmit }) {
             )}
 
             {step === 3 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <form onSubmit={(e) => { e.preventDefault(); handleFinalSubmit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                     <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#1E3A5F', marginBottom: 4 }}>Verifikasi Identitas &amp; Usaha</div>
                         <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}>Dokumen diperlukan untuk memvalidasi usaha sebelum bisa mengajukan pendanaan</div>
@@ -317,19 +379,25 @@ function UmkmForm({ onSubmit }) {
                         </p>
                     </div>
 
+                    {displayError && (
+                        <div style={{ padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 13, color: '#DC2626', lineHeight: 1.4 }}>
+                            {displayError}
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={() => setStep(2)} style={{ flex: 1, height: 40, background: 'transparent', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Kembali</button>
-                        <button onClick={onSubmit}
-                            style={{ flex: 2, height: 40, background: '#00C853', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-                            onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
-                            onMouseOut={e => e.currentTarget.style.opacity = '1'}
-                        >Kirim Pendaftaran</button>
+                        <button type="button" onClick={() => setStep(2)} style={{ flex: 1, height: 40, background: 'transparent', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Kembali</button>
+                        <button type="submit" disabled={isLoading}
+                            style={{ flex: 2, height: 40, background: '#00C853', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
+                            onMouseOver={e => { if (!isLoading) e.currentTarget.style.opacity = '0.88'; }}
+                            onMouseOut={e => { if (!isLoading) e.currentTarget.style.opacity = '1'; }}
+                        >{isLoading ? 'Mendaftarkan...' : 'Kirim Pendaftaran'}</button>
                     </div>
 
                     <p style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center', margin: 0, lineHeight: 1.6 }}>
                         Dengan mendaftar, Anda menyetujui <span style={{ color: '#1E3A5F', fontWeight: 600 }}>Syarat &amp; Ketentuan</span> dan <span style={{ color: '#1E3A5F', fontWeight: 600 }}>Kebijakan Privasi</span> NEMOS.
                     </p>
-                </div>
+                </form>
             )}
         </div>
     );
@@ -338,10 +406,27 @@ function UmkmForm({ onSubmit }) {
 // ── MAIN REGISTER COMPONENT ───────────────────────────────────
 export default function Register() {
     const [role, setRole] = useState('investor');
+    const [isLoading, setIsLoading] = useState(false);
+    const [submitError, setSubmitError] = useState('');
     const navigate = useNavigate();
+    const register = useAuthStore((state) => state.register);
 
-    const handleSubmit = () => {
-        navigate(role === 'investor' ? '/onboarding' : '/umkm-dashboard');
+    const handleSubmit = async (data) => {
+        setSubmitError('');
+        setIsLoading(true);
+        try {
+            await register(data);
+            const user = useAuthStore.getState().user;
+            if (user?.role === 'UMKM_OWNER') {
+                navigate('/umkm-dashboard');
+            } else {
+                navigate('/onboarding');
+            }
+        } catch (err) {
+            setSubmitError(err.message || 'Pendaftaran gagal. Coba lagi.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const accentColor = role === 'umkm' ? '#00C853' : '#1E3A5F';
@@ -392,8 +477,8 @@ export default function Register() {
 
                     {/* Form body */}
                     {role === 'investor'
-                        ? <InvestorForm onSubmit={handleSubmit} />
-                        : <UmkmForm onSubmit={handleSubmit} />}
+                        ? <InvestorForm onSubmit={handleSubmit} isLoading={isLoading} submitError={submitError} />
+                        : <UmkmForm onSubmit={handleSubmit} isLoading={isLoading} submitError={submitError} />}
 
                     {/* Login link */}
                     <p style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 16 }}>

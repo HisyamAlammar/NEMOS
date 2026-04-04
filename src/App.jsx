@@ -53,6 +53,9 @@ function InvestorTopNav({ userTier }) {
           <NavLink to="/learn" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>AI Learn Hub</NavLink>
           <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>UMKM Arena</NavLink>
           <NavLink to="/impact" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Laporan Dampak</NavLink>
+          {user?.role === 'UMKM_OWNER' && (
+            <NavLink to="/umkm-dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} style={{ color: '#00C853' }}>🏪 Panel Usaha</NavLink>
+          )}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -228,7 +231,7 @@ function UmkmSidebar({ sidebarOpen, setSidebarOpen }) {
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{ownerName}</div>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Dapur Nusantara</div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Panel Usaha</div>
             </div>
           </div>
 
@@ -295,59 +298,71 @@ function MobileHeader({ setSidebarOpen }) {
 // ==========================================
 // MAIN APP COMPONENT
 // ==========================================
-function App() {
+function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   // ── BUG-H2 & BUG-H3 FIX: Derive tier & role from auth store ──
-  // Zustand is the SINGLE source of truth. No more local state.
   const { user } = useAuthStore();
   const userTier = user?.tier?.toLowerCase() ?? 'free';
   const userRole = user?.role?.toLowerCase() ?? 'investor';
 
+  // CTO-05: UMKM_OWNER sees investor layout by default.
+  // Only show UMKM sidebar layout when explicitly on /umkm-* paths.
+  const isOnUmkmPage = location.pathname.startsWith('/umkm-');
+  const showUmkmLayout = userRole === 'umkm_owner' && isOnUmkmPage;
+
+  return (
+    <div className={`app-shell ${showUmkmLayout ? 'theme-umkm' : 'theme-investor'}`}>
+
+      {showUmkmLayout ? (
+        <div style={{ width: '100%', background: 'var(--color-bg)' }}>
+          <MobileHeader setSidebarOpen={setSidebarOpen} />
+          <UmkmSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          <main className="main-content">
+            <Routes>
+              <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
+              <Route path="/umkm-omzet" element={<UmkmOmzet />} />
+              <Route path="/umkm-kewajiban" element={<UmkmKewajiban />} />
+              <Route path="/umkm-komunitas" element={<UmkmKomunitas />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/umkm-dashboard" replace />} />
+            </Routes>
+          </main>
+        </div>
+      ) : (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg)' }}>
+          <InvestorTopNav userTier={userTier} />
+          <main style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/learn" element={<LearnHub />} />
+              <Route path="/arena" element={<UmkmArena />} />
+              <Route path="/detail/:id" element={<UmkmDetail />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/protection" element={<Protection />} />
+              <Route path="/impact" element={<Impact />} />
+              <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function App() {
   return (
     <BrowserRouter>
-      <div className={`app-shell ${userRole === 'investor' ? 'theme-investor' : 'theme-umkm'}`}>
-
-        {userRole === 'investor' ? (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg)' }}>
-            <InvestorTopNav userTier={userTier} />
-            <main style={{ flex: 1 }}>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/learn" element={<LearnHub />} />
-                <Route path="/arena" element={<UmkmArena />} />
-                <Route path="/detail/:id" element={<UmkmDetail />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/protection" element={<Protection />} />
-                <Route path="/impact" element={<Impact />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
-        ) : (
-          <div style={{ width: '100%', background: 'var(--color-bg)' }}>
-            <MobileHeader setSidebarOpen={setSidebarOpen} />
-            <UmkmSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <main className="main-content">
-              <Routes>
-                <Route path="/umkm-dashboard" element={<UmkmDashboard />} />
-                <Route path="/umkm-omzet" element={<UmkmOmzet />} />
-                <Route path="/umkm-kewajiban" element={<UmkmKewajiban />} />
-                <Route path="/umkm-komunitas" element={<UmkmKomunitas />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/umkm-dashboard" replace />} />
-              </Routes>
-            </main>
-          </div>
-        )}
-
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 }

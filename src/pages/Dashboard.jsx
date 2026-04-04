@@ -4,9 +4,29 @@ import { getUmkmImage } from '../constants/umkmImages';
 import { useAuthStore } from '../stores/auth.store';
 import { apiFetch } from '../lib/api';
 
+// ── Shared module data (single source of truth with LearnHub) ──
+const LEARNING_MODULES = [
+    { id: 1, title: 'Dasar Investasi RBF', duration: '12 menit', xp: 250 },
+    { id: 2, title: 'Memitigasi Risiko UMKM', duration: '15 menit', xp: 250 },
+    { id: 3, title: 'Analisis Laporan Keuangan', duration: '20 menit', xp: 250 },
+    { id: 4, title: 'Menilai Karakter UMKM', duration: '18 menit', xp: 250 },
+    { id: 5, title: 'Revenue-Based Financing Lanjutan', duration: '25 menit', xp: 250 },
+    { id: 6, title: 'Diversifikasi Portofolio', duration: '20 menit', xp: 250 },
+    { id: 7, title: 'Strategi Exit & Reinvestasi', duration: '15 menit', xp: 250 },
+];
+
 export default function Dashboard() {
     const user = useAuthStore((s) => s.user);
     const userName = user?.name || 'Investor';
+
+    // AM-01 + CTO-04: Derive learning progress from auth store (synced with LearnHub)
+    const learningProgress = user?.learningProgress ?? 0;
+    const totalModules = LEARNING_MODULES.length;
+    const completedModules = Math.floor((learningProgress / 100) * totalModules);
+    const activeModuleIndex = Math.min(completedModules, totalModules - 1);
+    const activeModule = LEARNING_MODULES[activeModuleIndex];
+    const totalXP = completedModules * 250;
+    const modulesRemaining = totalModules - completedModules;
 
     const [portfolioData, setPortfolioData] = useState({ data: [], totalObject: 0 });
 
@@ -44,8 +64,8 @@ export default function Dashboard() {
                     >
                         <div className="label-uppercase text-muted" style={{ marginBottom: 8 }}>Total Portofolio</div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
-                            <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--color-text-pri)', lineHeight: 1 }}>Rp {portfolioData.totalObject.toLocaleString('id-ID')}</div>
-                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-accent)' }}>+3,2% bulan ini</div>
+                            <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--color-text-pri)', lineHeight: 1 }}>Rp {(portfolioData.totalObject || 0).toLocaleString('id-ID')}</div>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: portfolioData.totalObject > 0 ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>{portfolioData.totalObject > 0 ? '+0,0% bulan ini' : 'Belum ada data'}</div>
                         </div>
 
                         <div style={{ height: 6, width: '100%', borderRadius: 3, background: 'var(--color-border)', display: 'flex', overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
@@ -55,7 +75,7 @@ export default function Dashboard() {
                             {/* Indicator dot at 72% */}
                             <div style={{ position: 'absolute', top: '50%', left: '72%', transform: 'translate(-50%, -50%)', width: 12, height: 12, borderRadius: '50%', background: '#fff', border: '2px solid var(--color-text-pri)', boxShadow: '0 0 0 2px #fff' }}></div>
                         </div>
-                        <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-text-sec)' }}>Kesehatan Portofolio: Baik</div>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-text-sec)' }}>{portfolioData.totalObject > 0 ? 'Kesehatan Portofolio: Baik' : 'Kesehatan Portofolio: Belum Ada Investasi'}</div>
                     </div>
                 </div>
 
@@ -69,7 +89,7 @@ export default function Dashboard() {
                         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                             <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h2 className="card-title">Progres Pembelajaran</h2>
-                                <span className="pill" style={{ background: 'var(--color-primary)', color: '#fff' }}>Level 4 — Konservatif</span>
+                                <span className="pill" style={{ background: 'var(--color-primary)', color: '#fff' }}>Level {Math.max(1, Math.ceil(completedModules / 2))} — {learningProgress >= 100 ? 'Expert' : learningProgress >= 60 ? 'Konservatif' : 'Pemula'}</span>
                             </div>
 
                             <div style={{ padding: 'var(--space-xl)', display: 'flex', alignItems: 'center', gap: 'var(--space-xl)' }}>
@@ -77,18 +97,18 @@ export default function Dashboard() {
                                 <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <svg style={{ position: 'absolute', top: 0, left: 0, width: 120, height: 120, transform: 'rotate(-90deg)' }}>
                                         <circle cx="60" cy="60" r="54" fill="none" stroke="var(--color-border)" strokeWidth="8" />
-                                        <circle cx="60" cy="60" r="54" fill="none" stroke="var(--color-primary)" strokeWidth="8" strokeDasharray={2 * Math.PI * 54} strokeDashoffset={(2 * Math.PI * 54) * 0.3} strokeLinecap="round" />
+                                        <circle cx="60" cy="60" r="54" fill="none" stroke="var(--color-primary)" strokeWidth="8" strokeDasharray={2 * Math.PI * 54} strokeDashoffset={(2 * Math.PI * 54) * (1 - learningProgress / 100)} strokeLinecap="round" />
                                     </svg>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1 }}>
-                                        <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)', lineHeight: 1.2 }}>70%</span>
-                                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>5 dari 7 modul</span>
+                                        <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)', lineHeight: 1.2 }}>{learningProgress}%</span>
+                                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{completedModules} dari {totalModules} modul</span>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="label-uppercase text-muted" style={{ marginBottom: 4 }}>Sedang Dipelajari</div>
-                                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text-pri)', marginBottom: 8 }}>Revenue-Based Financing</h3>
-                                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-accent)' }}>1.250 XP terkumpul</div>
+                                    <div className="label-uppercase text-muted" style={{ marginBottom: 4 }}>{learningProgress >= 100 ? 'Semua Selesai' : 'Sedang Dipelajari'}</div>
+                                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text-pri)', marginBottom: 8 }}>{activeModule.title}</h3>
+                                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-accent)' }}>{totalXP.toLocaleString('id-ID')} XP terkumpul</div>
                                 </div>
                             </div>
 
@@ -96,7 +116,7 @@ export default function Dashboard() {
                             <div style={{ background: 'var(--color-amber-tint)', padding: '16px var(--space-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: 'none', stroke: 'var(--color-warning)', strokeWidth: 2 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                                    <span style={{ fontSize: '14px', fontWeight: 500, color: '#B45309' }}>2 modul lagi untuk membuka akses UMKM Grade B</span>
+                                    <span style={{ fontSize: '14px', fontWeight: 500, color: '#B45309' }}>{learningProgress >= 100 ? '🎉 Semua modul selesai! Akses investasi terbuka.' : `${modulesRemaining} modul lagi untuk membuka akses investasi penuh`}</span>
                                 </div>
                                 <NavLink to="/learn" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-primary)' }}>Lanjutkan Belajar →</NavLink>
                             </div>

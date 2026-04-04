@@ -198,6 +198,9 @@ export default function UmkmDetail() {
     // ── Success: Render with API data ──
     const d = umkmData;
     const funded = pct(d.current, d.target);
+    const remainingFunding = Math.max(Number(d.target) - Number(d.current), 0); // AM-03
+    const isFullyFunded = remainingFunding <= 0;
+    const calcMax = isFullyFunded ? 500000 : Math.max(remainingFunding, 500000);
     const est = { total: investValue + investValue * 0.16, profit: investValue * 0.16 };
 
     // Conic gradient for alloc chart
@@ -391,8 +394,13 @@ export default function UmkmDetail() {
                         <div className="card">
                             <h2 className="card-title" style={{ marginBottom: 4 }}>Kalkulator Investasi</h2>
                             <p className="text-muted" style={{ fontSize: '13px', marginBottom: 'var(--space-xl)' }}>Simulasikan potensi return berdasarkan histori omzet terverifikasi</p>
+                            {isFullyFunded && (
+                                <div style={{ padding: '12px 16px', background: '#FFF8E1', border: '1px solid #FFE082', borderRadius: 8, marginBottom: 16, fontSize: 14, fontWeight: 600, color: '#F57C00' }}>
+                                    🎉 UMKM ini sudah mencapai target pendanaan penuh.
+                                </div>
+                            )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 'var(--space-xl)' }}>
-                                <input type="range" min="500000" max="10000000" step="100000" value={investValue} onChange={e => setInvestValue(Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--color-primary)' }} />
+                                <input type="range" min="500000" max={calcMax} step="100000" value={Math.min(investValue, calcMax)} onChange={e => setInvestValue(Number(e.target.value))} disabled={isFullyFunded} style={{ flex: 1, accentColor: 'var(--color-primary)', opacity: isFullyFunded ? 0.4 : 1 }} />
                                 <input type="text" value={formatRp(investValue)} readOnly style={{ width: 150, height: 44, padding: '0 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 600, textAlign: 'right', outline: 'none', background: 'var(--color-bg)' }} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>

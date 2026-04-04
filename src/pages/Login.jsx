@@ -26,12 +26,8 @@ export default function Login() {
         setIsLoading(true);
         try {
             await login({ email: email.trim(), password });
-            const user = useAuthStore.getState().user;
-            if (user?.role === 'UMKM_OWNER') {
-                navigate('/umkm-dashboard');
-            } else {
-                navigate('/arena');
-            }
+            // CTO-05: ALL roles redirect to /dashboard (investor view first)
+            navigate('/dashboard');
         } catch (err) {
             setError(err.message || 'Login gagal. Periksa email dan password Anda.');
         } finally {
